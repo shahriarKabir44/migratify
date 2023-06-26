@@ -63,6 +63,7 @@ class Table {
     newlyAddedColumns = []
     columnsToRemove = []
     foreignKeys = []
+    columnsToUpdate = []
     name = ""
     /**
      * 
@@ -79,7 +80,7 @@ class Table {
     }
     removeProperty(columnName) {
         this.columns = this.columns.filter(column => column.name = columnName)
-        this.columnsToRemove.push(`drop column ${columnName}`);
+        this.columnsToRemove.push(`drop column if exists ${columnName}`);
     }
     updateAddProperty(
         newPropertyName
@@ -98,7 +99,6 @@ class Table {
             let result = await executeSqlAsync({
                 sql
             })
-            console.log(result)
         } catch (error) {
             console.log(error)
         }
@@ -116,11 +116,20 @@ class Table {
     }
     update() {
         let sql = `alter table ${this.name} ${this.newlyAddedColumns.map((column) =>
-            'ADD COLUMN ' + column.createSQL()).join(',')}
+            'ADD COLUMN  ' + column.createSQL()).join(',')}
             ${this.columnsToRemove.length > 0 && this.newlyAddedColumns.length > 0 ? ',' : ' '}
-            ${this.columnsToRemove.length > 0 && this.newlyAddedColumns.length > 0 ? ',' : ' '}
+            
+            ${this.columnsToRemove.join(',')}
+            
+            ${(this.columnsToRemove.length > 0 ||
+                this.newlyAddedColumns.length > 0) &&
+                this.columnsToUpdate.length > 0
+                ? ',' : ' '}
 
-            ${this.columnsToRemove.join(',')}; `
+             ${this.columnsToUpdate.map((column) =>
+                    'MODIFY ' + column.createSQL()).join(',')}
+            
+            ; `
         Table.executeSql(sql)
 
     }
@@ -129,6 +138,11 @@ class Table {
         this.columns.push(column)
         column.setPrimaryKey(true)
         column.setDataType('int')
+    }
+    updateExistingColumn(columnName) {
+        let column = new Column(columnName)
+        this.columnsToUpdate.push(column)
+        return column
     }
 }
 
