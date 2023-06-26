@@ -1,10 +1,12 @@
 const { connectionObject, initConnection } = require('./utils/dbConnection')
 require('dotenv').config()
 const fs = require('fs');
-initConnection(process.env)
+const { createDatabaseIfNotExists } = require('./utils/primaryDBConnection');
 const commands = process.argv.filter((item, index) => index > 1)
 require('dotenv').config()
 if (commands[0] == 'create-table') {
+    initConnection(process.env)
+
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
     let templateStr = fs.readFileSync('./templates/createTable.template.txt').toString()
     templateStr = templateStr.replace('-', commands[1])
@@ -12,6 +14,8 @@ if (commands[0] == 'create-table') {
 
 }
 else if (commands[0] == 'update-table') {
+    initConnection(process.env)
+
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
 
     let templateStr = fs.readFileSync('./templates/updateTable.template.txt').toString()
@@ -21,7 +25,14 @@ else if (commands[0] == 'update-table') {
 }
 
 else if (commands[0] == 'migrate') {
+    initConnection(process.env)
+
     require('./migrations/index')
+}
+
+else if (commands[0] == 'create-db') {
+    createDatabaseIfNotExists(process.env)
+
 }
 
 function createMigrationFiles(newFileName, templateStr) {
@@ -39,7 +50,13 @@ function createMigrationFiles(newFileName, templateStr) {
 
     }
 }
-connectionObject.connection.end()
+
+try {
+    connectionObject.connection.end()
+
+} catch (error) {
+
+}
 
 // let myTable = new Table('test')
 
