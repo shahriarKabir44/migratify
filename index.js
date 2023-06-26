@@ -1,5 +1,7 @@
-const { Table } = require('./templates/Migration.class')
+const { connectionObject, initConnection } = require('./utils/dbConnection')
+require('dotenv').config()
 const fs = require('fs');
+initConnection(process.env)
 const commands = process.argv.filter((item, index) => index > 1)
 require('dotenv').config()
 if (commands[0] == 'create-table') {
@@ -37,6 +39,7 @@ function createMigrationFiles(newFileName, templateStr) {
 
     }
 }
+connectionObject.connection.end()
 
 // let myTable = new Table('test')
 

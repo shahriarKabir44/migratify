@@ -1,7 +1,5 @@
 
 const executeSqlAsync = require('../utils/promisify')
-const { connectionObject, initConnection } = require('../utils/dbConnection')
-require('dotenv').config()
 
 class Column {
     name = ""
@@ -93,7 +91,6 @@ class Table {
     }
     static async executeSql(sql) {
         try {
-            initConnection(process.env)
             let result = await executeSqlAsync({
                 sql
             })
@@ -102,7 +99,6 @@ class Table {
             console.log(error)
         }
 
-        connectionObject.connection.end()
     }
     create() {
         let sql = `create table if not exists ${this.name}(
