@@ -62,6 +62,7 @@ class Table {
     columns = []
     newlyAddedColumns = []
     columnsToRemove = []
+    foreignKeys = []
     name = ""
     /**
      * 
@@ -72,6 +73,9 @@ class Table {
         let newColumn = new Column(columnName)
         this.columns.push(newColumn)
         return newColumn
+    }
+    setForeignKey(columnName, refTable, refColumn) {
+        this.foreignKeys.push(`   FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     removeProperty(columnName) {
         this.columns = this.columns.filter(column => column.name = columnName)
@@ -105,6 +109,8 @@ class Table {
             ${this.columns.map(column => {
             return column.createSQL()
         }).join(',')}
+        ${this.columns.length > 0 && this.foreignKeys.length > 0 ? ',' : ''}
+        ${this.foreignKeys.join(',')}
         );`
         Table.executeSql(sql)
     }
@@ -112,6 +118,8 @@ class Table {
         let sql = `alter table ${this.name} ${this.newlyAddedColumns.map((column) =>
             'ADD COLUMN ' + column.createSQL()).join(',')}
             ${this.columnsToRemove.length > 0 && this.newlyAddedColumns.length > 0 ? ',' : ' '}
+            ${this.columnsToRemove.length > 0 && this.newlyAddedColumns.length > 0 ? ',' : ' '}
+
             ${this.columnsToRemove.join(',')}; `
         Table.executeSql(sql)
 
