@@ -1,5 +1,2 @@
-1687875652713create-table_student.js
-1687875768334create-table_course.js
-1687876185515update-table_course.js
- 
-1687876936211update-table_course.js
+1687885554669create-table_teacher.js
+1687885611758create-table_course.js

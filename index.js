@@ -23,30 +23,44 @@ else if (commands[0] == 'update-table') {
 }
 
 else if (commands[0] == 'migrate') {
-    initConnection(process.env)
-    const fileNames = fs.readFileSync('./migrations/index.txt').toString().split('\n')
-    if (!fs.existsSync(__dirname + '/migrations/logs.txt')) {
-        fs.writeFileSync(__dirname + '/migrations/logs.txt', "")
 
-    }
-    const existingList = fs.readFileSync(__dirname + '/migrations/logs.txt').toString().split('\n')
-    let existingMap = {}
-    for (let existing of existingList) existingMap[existing] = 1
-    for (let fileName of fileNames) {
-        if (existingMap[fileName] == null) {
-            try {
-                require(__dirname + `/migrations/${fileName}`)
 
-            } catch (error) {
-                console.log("oopsie")
+    (async () => {
+
+        initConnection(process.env)
+        const fileNames = fs.readFileSync('./migrations/index.txt').toString().split('\n')
+        if (!fs.existsSync(__dirname + '/migrations/logs.txt')) {
+            fs.writeFileSync(__dirname + '/migrations/logs.txt', "")
+
+        }
+        const existingList = fs.readFileSync(__dirname + '/migrations/logs.txt').toString().split('\n')
+        let existingMap = {}
+        for (let existing of existingList) existingMap[existing] = 1
+        let executed = existingList.join('\n')
+        for (let fileName of fileNames) {
+            if (existingMap[fileName] == null) {
+                try {
+                    await require(__dirname + `/migrations/${fileName}`)()
+                    executed += fileName + '\n'
+
+
+                } catch (error) {
+                    console.log(fileName)
+                }
+
             }
 
         }
 
-    }
-    const writeStream = fs.createWriteStream(__dirname + '/migrations/logs.txt')
-    writeStream.write(fileNames.join('\n'))
-    writeStream.close()
+        let writeStream = fs.createWriteStream(__dirname + '/migrations/logs.txt')
+        writeStream.write(executed)
+        writeStream.close()
+        connectionObject.connection.end()
+    })()
+
+
+
+
 
 }
 
@@ -71,7 +85,7 @@ function createMigrationFiles(newFileName, templateStr) {
 }
 
 try {
-    connectionObject.connection.end()
+
 
 } catch (error) {
 

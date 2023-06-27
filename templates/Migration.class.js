@@ -109,7 +109,7 @@ class Table {
         ${this.columns.length > 0 && this.foreignKeys.length > 0 ? ',' : ''}
         ${this.foreignKeys.join(',')}
         );`
-        Table.executeSql(sql)
+        return Table.executeSql(sql)
     }
     update() {
         let sql = `alter table ${this.name} ${this.columns.map((column) =>
@@ -132,7 +132,7 @@ class Table {
                 ? ',' : ' '}
             ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
             ; `
-        Table.executeSql(sql)
+        return Table.executeSql(sql)
 
     }
 

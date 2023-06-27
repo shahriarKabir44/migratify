@@ -2,4 +2,6 @@ const {Table} = require('../templates/Migration.class')
 
 let newTable = new Table("-")
 
-newTable.update()
+module.exports = async () => {
+    newTable.update()
+}
