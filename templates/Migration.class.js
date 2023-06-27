@@ -73,9 +73,10 @@ class Table {
      * @param {String} columnName 
      * @returns {Column}
      */
-    addProperty(columnName) {
+    addProperty(columnName, dataType) {
         let newColumn = new Column(columnName)
         this.columns.push(newColumn)
+        newColumn.setDataType(dataType)
         return newColumn
     }
     setForeignKey(columnName, refTable, refColumn) {
@@ -86,10 +87,11 @@ class Table {
         this.columnsToRemove.push(`drop column if exists ${columnName}`);
     }
     updateAddProperty(
-        newPropertyName
+        newPropertyName, dataType
     ) {
         let newColumn = new Column(newPropertyName)
         this.newlyAddedColumns.push(newColumn)
+        newColumn.setDataType(dataType)
         return newColumn
     }
     constructor(tableName) {
