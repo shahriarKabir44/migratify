@@ -6,19 +6,16 @@ const commands = process.argv.filter((item, index) => index > 1)
 require('dotenv').config()
 if (commands[0] == 'create-table') {
 
-    const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
-    let templateStr = fs.readFileSync('./templates/createTable.template.txt').toString()
-    templateStr = templateStr.replace('-', commands[1])
-    createMigrationFiles(newFileName, templateStr)
+    createMigrationFiles(commands, 'createTable')
+
 
 }
 else if (commands[0] == 'update-table') {
+    createMigrationFiles(commands, 'updateTable')
 
-    const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
-
-    let templateStr = fs.readFileSync('./templates/updateTable.template.txt').toString()
-    templateStr = templateStr.replace('-', commands[1])
-    createMigrationFiles(newFileName, templateStr)
+}
+else if (commands[0] == 'drop-table') {
+    createMigrationFiles(commands, 'dropTable')
 
 }
 
@@ -69,7 +66,12 @@ else if (commands[0] == 'create-db') {
 
 }
 
-function createMigrationFiles(newFileName, templateStr) {
+function createMigrationFiles(commands, type) {
+    const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
+
+
+    let templateStr = fs.readFileSync(`./templates/${type}.template.txt`).toString()
+    templateStr = templateStr.replace('-', commands[1])
     if (!fs.existsSync('migrations')) {
         fs.mkdirSync('migrations', { recursive: true });
     }

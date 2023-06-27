@@ -1,2 +1,3 @@
 1687885554669create-table_teacher.js
 1687885611758create-table_course.js
+1687892375220drop-table_course.js

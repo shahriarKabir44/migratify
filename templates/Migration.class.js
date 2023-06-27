@@ -66,6 +66,7 @@ class Table {
     columnsToRemove = []
     foreignKeys = []
     columnsToUpdate = []
+    columnsToRename = []
     name = ""
     /**
      * 
@@ -101,6 +102,9 @@ class Table {
         }
 
     }
+    static async drop() {
+        return Table.executeSql(`DROP TABLE ${this.name};`)
+    }
     create() {
         let sql = `create table if not exists ${this.name}(
             ${this.columns.map(column => {
@@ -131,11 +135,19 @@ class Table {
                 this.foreignKeys.length > 0
                 ? ',' : ' '}
             ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
+            ${(this.columnsToRemove.length > 0 ||
+                this.columns.length > 0 ||
+                this.columnsToUpdate.length > 0 ||
+                this.foreignKeys.length > 0) &&
+                this.columnsToRename.length > 0 ? "," : " "}
+            ${this.columnsToRename.join(',')}
             ; `
         return Table.executeSql(sql)
 
     }
-
+    renameColumn(oldName, newName) {
+        this.columnsToRename.push(`RENAME COLUMN ${oldName} TO ${newName}`)
+    }
     setID(idName) {
         let column = new Column(idName)
         this.columns.push(column)
