@@ -15,9 +15,12 @@ class Column {
             this.isAutoIncrement = true
             this.isNullable = false
         }
+        return this
     }
     setUnique(flag = false) {
         this.isUnique = flag
+        this.isNullable = false
+        return this
     }
     constructor(columnName) {
         this.name = columnName

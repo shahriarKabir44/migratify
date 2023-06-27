@@ -5,7 +5,6 @@ const { createDatabaseIfNotExists } = require('./utils/primaryDBConnection');
 const commands = process.argv.filter((item, index) => index > 1)
 require('dotenv').config()
 if (commands[0] == 'create-table') {
-    initConnection(process.env)
 
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
     let templateStr = fs.readFileSync('./templates/createTable.template.txt').toString()
@@ -14,7 +13,6 @@ if (commands[0] == 'create-table') {
 
 }
 else if (commands[0] == 'update-table') {
-    initConnection(process.env)
 
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
 
@@ -26,8 +24,26 @@ else if (commands[0] == 'update-table') {
 
 else if (commands[0] == 'migrate') {
     initConnection(process.env)
+    const fileNames = fs.readFileSync('./migrations/index.txt').toString().split('\n')
+    if (!fs.existsSync(__dirname + '/migrations/logs.txt')) {
+        fs.writeFileSync(__dirname + '/migrations/logs.txt', "")
 
-    require('./migrations/index')
+    }
+    const existingList = fs.readFileSync(__dirname + '/migrations/logs.txt').toString().split('\n')
+    let existingMap = {}
+    for (let existing of existingList) existingMap[existing] = 1
+    const writeStream = fs.createWriteStream(__dirname + '/migrations/logs.txt')
+    for (let fileName of fileNames) {
+        if (existingMap[fileName] == null) {
+            require(__dirname + `/migrations/${fileName}`)
+            writeStream.write(fileName + '\n')
+
+        }
+
+    }
+
+    writeStream.close()
+
 }
 
 else if (commands[0] == 'create-db') {
@@ -40,13 +56,12 @@ function createMigrationFiles(newFileName, templateStr) {
         fs.mkdirSync('migrations', { recursive: true });
     }
     fs.writeFileSync('./migrations/' + newFileName, templateStr)
-    //fs.writeFileSync('./migrations/index.js', templateStr)
-    if (!fs.existsSync('./migrations/index.js')) {
-        fs.writeFileSync('./migrations/index.js', `require('./${newFileName}')`)
+    if (!fs.existsSync('./migrations/index.txt')) {
+        fs.writeFileSync('./migrations/index.txt', `${newFileName}`)
     }
     else {
-        let migratorIndexContents = fs.readFileSync('./migrations/index.js').toString()
-        fs.writeFileSync(__dirname + '/migrations/index.js', migratorIndexContents + `\nrequire('./${newFileName}')`)
+        let migratorIndexContents = fs.readFileSync('./migrations/index.txt').toString()
+        fs.writeFileSync(__dirname + '/migrations/index.txt', migratorIndexContents + `\n${newFileName}`)
 
     }
 }
