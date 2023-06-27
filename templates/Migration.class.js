@@ -63,7 +63,6 @@ class Column {
 }
 class Table {
     columns = []
-    newlyAddedColumns = []
     columnsToRemove = []
     foreignKeys = []
     columnsToUpdate = []
@@ -73,27 +72,20 @@ class Table {
      * @param {String} columnName 
      * @returns {Column}
      */
-    addProperty(columnName, dataType) {
+    addColumn(columnName, dataType) {
         let newColumn = new Column(columnName)
         this.columns.push(newColumn)
         newColumn.setDataType(dataType)
         return newColumn
     }
-    setForeignKey(columnName, refTable, refColumn) {
+    addForeignKey(columnName, refTable, refColumn) {
         this.foreignKeys.push(`   FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     removeProperty(columnName) {
         this.columns = this.columns.filter(column => column.name = columnName)
         this.columnsToRemove.push(`drop column if exists ${columnName}`);
     }
-    updateAddProperty(
-        newPropertyName, dataType
-    ) {
-        let newColumn = new Column(newPropertyName)
-        this.newlyAddedColumns.push(newColumn)
-        newColumn.setDataType(dataType)
-        return newColumn
-    }
+
     constructor(tableName) {
         this.name = tableName
         this.columns = []
@@ -120,24 +112,30 @@ class Table {
         Table.executeSql(sql)
     }
     update() {
-        let sql = `alter table ${this.name} ${this.newlyAddedColumns.map((column) =>
+        let sql = `alter table ${this.name} ${this.columns.map((column) =>
             'ADD COLUMN  ' + column.createSQL()).join(',')}
-            ${this.columnsToRemove.length > 0 && this.newlyAddedColumns.length > 0 ? ',' : ' '}
+            ${this.columnsToRemove.length > 0 && this.columns.length > 0 ? ',' : ' '}
             
             ${this.columnsToRemove.join(',')}
             
             ${(this.columnsToRemove.length > 0 ||
-                this.newlyAddedColumns.length > 0) &&
+                this.columns.length > 0) &&
                 this.columnsToUpdate.length > 0
                 ? ',' : ' '}
 
              ${this.columnsToUpdate.map((column) =>
                     'MODIFY ' + column.createSQL()).join(',')}
-            
+            ${(this.columnsToRemove.length > 0 ||
+                this.columns.length > 0 ||
+                this.columnsToUpdate.length > 0) &&
+                this.foreignKeys.length > 0
+                ? ',' : ' '}
+            ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
             ; `
         Table.executeSql(sql)
 
     }
+
     setID(idName) {
         let column = new Column(idName)
         this.columns.push(column)

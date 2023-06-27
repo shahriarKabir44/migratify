@@ -32,16 +32,20 @@ else if (commands[0] == 'migrate') {
     const existingList = fs.readFileSync(__dirname + '/migrations/logs.txt').toString().split('\n')
     let existingMap = {}
     for (let existing of existingList) existingMap[existing] = 1
-    const writeStream = fs.createWriteStream(__dirname + '/migrations/logs.txt')
     for (let fileName of fileNames) {
         if (existingMap[fileName] == null) {
-            require(__dirname + `/migrations/${fileName}`)
-            writeStream.write(fileName + '\n')
+            try {
+                require(__dirname + `/migrations/${fileName}`)
+
+            } catch (error) {
+                console.log("oopsie")
+            }
 
         }
 
     }
-
+    const writeStream = fs.createWriteStream(__dirname + '/migrations/logs.txt')
+    writeStream.write(fileNames.join('\n'))
     writeStream.close()
 
 }
