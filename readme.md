@@ -94,9 +94,7 @@ argument with the name of the table you want to create. Open the newly created f
 something like this: <br>
 <code>
 const { Table } = require('../templates/Migration.class')
-
 let newTable = new Table("tablename")
-
 module.exports = async () => {
     newTable.update()
 }
@@ -145,6 +143,11 @@ Here is a list of methods that you can use to update your table:
 
 <h3><u>Migrate:</u></h3>
 To commit the changes to the database, run the following command:
-Then type <code> node index migrate</code>
+Type <code>node index migrate</code>
 
 This will run all the migration files and update the database schema.
+
+
+<h3><u>Help:</u></h3>
+To see the list of commands,
+Type <code>node index migrate</code>
