@@ -10,15 +10,16 @@
         <code>npm i</code>
         on the terminal to install dependencies.
     </li>
-     
+
 </ol>
 <h2>Features</h2>
 <h3><u>Create database:</u></h3>
 Go to the project directory by typing
 <code>cd Nodejs_Database_Migrator</code>
 on your terminal.
-Then type <code> node index create-db</code> </br>
-This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a database for you.
+Then type <br> <code> node index create-db</code> </br>
+This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a
+database for you.
 
 <h3><u>Create table:</u></h3>
 Go to the project directory by typing
@@ -31,9 +32,7 @@ argument with the name of the table you want to create. Open the newly created f
 something like this: <br>
 <code>
 const { Table } = require('../templates/Migration.class')
-
-let newTable = new Table("tablename")
-
+let newTable =new Table("tablename")
 module.exports = async () => {
     newTable.create()
 }
