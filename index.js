@@ -63,7 +63,11 @@ else if (commands[0] == 'migrate') {
 }
 
 else if (commands[0] == 'create-db') {
-
+    if (fs.existsSync('./.git')) {
+        fs.rmSync(__dirname + '/.git', {
+            recursive: true,
+        })
+    }
     createEnv(__dirname).then(() => {
         createDatabaseIfNotExists(process.env)
 
