@@ -66,6 +66,21 @@ else if (commands[0] == 'create-db') {
 
 }
 
+else if (commands[0] == 'clear') {
+    if (fs.existsSync('./migrations/logs.txt')) {
+        fs.unlinkSync('./migrations/logs.txt')
+    }
+}
+else if (commands[0] == 'help') {
+    console.log("create-db : creates database with the name given in the .env file")
+    console.log('create-table <table name>: creates a migration file for creating a table named <table name>')
+    console.log('update-table <table name>: creates a migration file for updating a table named <table name>')
+    console.log('drop-table <table name>: creates a migration file for dropping a table named <table name>')
+    console.log('migrate: runs the migrations')
+    console.log('clear: clears the migration history')
+
+}
+
 function createMigrationFiles(commands, type) {
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
 
@@ -86,18 +101,9 @@ function createMigrationFiles(commands, type) {
     }
 }
 
-try {
-
-
-} catch (error) {
-
-}
-
-// let myTable = new Table('test')
 
 
 
-// myTable.create()
 
 
 
