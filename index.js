@@ -1,10 +1,8 @@
 const { connectionObject, initConnection } = require('./utils/dbConnection')
-require('dotenv').config()
 const fs = require('fs');
 const { createDatabaseIfNotExists } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
 const commands = process.argv.filter((item, index) => index > 1)
-require('dotenv').config()
 if (commands[0] == 'create-table') {
 
     createMigrationFiles(commands, 'createTable')
@@ -24,6 +22,7 @@ else if (commands[0] == 'migrate') {
 
 
     (async () => {
+        require('dotenv').config()
 
         initConnection(process.env)
         const fileNames = fs.readFileSync('./migrations/index.txt').toString().split('\n')
@@ -69,6 +68,8 @@ else if (commands[0] == 'create-db') {
         })
     }
     createEnv(__dirname).then(() => {
+        require('dotenv').config()
+
         createDatabaseIfNotExists(process.env)
 
     })
