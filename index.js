@@ -63,8 +63,8 @@ else if (commands[0] == 'migrate') {
 }
 
 else if (commands[0] == 'create-db') {
-   
-    createEnv().then(() => {
+
+    createEnv(__dirname).then(() => {
         createDatabaseIfNotExists(process.env)
 
     })

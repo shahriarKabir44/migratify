@@ -14,17 +14,17 @@ async function takeInput(question) {
         });
     })
 }
-async function createEnv() {
+async function createEnv(path) {
 
     let dbName = await takeInput('Database name ')
     let dbPort = await takeInput('port (typically 3306)')
     let dbHost = await takeInput('database host (typically localhost) ')
     let dbPassword = await takeInput('password ')
     let dbUser = await takeInput('user (typically root)')
-    if (!fs.existsSync('./.env')) {
-        fs.writeFileSync('./.env', "")
+    if (!fs.existsSync(path + '/.env')) {
+        fs.writeFileSync(path + '/.env', "")
     }
-    fs.writeFileSync('./.env', `dbPassword="${dbPassword}"\ndbPort=${dbPort}\ndbName=${dbName}\ndbUser="${dbUser}"\ndbHost="${dbHost}"`
+    fs.writeFileSync(path + '/.env', `dbPassword="${dbPassword}"\ndbPort=${dbPort}\ndbName=${dbName}\ndbUser="${dbUser}"\ndbHost="${dbHost}"`
     )
 
     rl.close()
