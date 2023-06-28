@@ -3,19 +3,19 @@ const fs = require('fs')
 const readline = require('readline');
 
 // Create an interface for reading input
-const rl = readline.createInterface({
-    input: process.stdin,
-    output: process.stdout
-});
-async function takeInput(question) {
-    return new Promise((resolve, reject) => {
-        rl.question(question, (data) => {
-            resolve(data)
-        });
-    })
-}
-async function createEnv(path) {
 
+async function createEnv(path) {
+    const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout
+    });
+    async function takeInput(question) {
+        return new Promise((resolve, reject) => {
+            rl.question(question, (data) => {
+                resolve(data)
+            });
+        })
+    }
     let dbName = await takeInput('Database name ')
     let dbPort = await takeInput('port (typically 3306)')
     let dbHost = await takeInput('database host (typically localhost) ')
@@ -24,12 +24,14 @@ async function createEnv(path) {
     if (!fs.existsSync(path + '/.env')) {
         fs.writeFileSync(path + '/.env', "")
     }
-    fs.writeFileSync(path + '/.env', `dbPassword="${dbPassword}"\ndbPort=${dbPort}\ndbName=${dbName}\ndbUser="${dbUser}"\ndbHost="${dbHost}"`
-    )
+    fs.writeFileSync(path + '/.env', `dbPassword="${dbPassword}"\ndbPort=${dbPort}\ndbName=${dbName}\ndbUser="${dbUser}"\ndbHost="${dbHost}"`)
 
     rl.close()
-
+    rl.on('close', () => {
+    })
 }
+
+
 module.exports = { createEnv }
 
 
