@@ -146,4 +146,4 @@ This will run all the migration files and update the database schema.
 
 <h3><u>Help:</u></h3>
 To see the list of commands,
-Type <code>node index migrate</code>
+Type <code>node index help</code>
