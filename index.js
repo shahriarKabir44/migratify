@@ -2,6 +2,7 @@ const { connectionObject, initConnection } = require('./utils/dbConnection')
 require('dotenv').config()
 const fs = require('fs');
 const { createDatabaseIfNotExists } = require('./utils/primaryDBConnection');
+const { createEnv } = require('./utils/userInput');
 const commands = process.argv.filter((item, index) => index > 1)
 require('dotenv').config()
 if (commands[0] == 'create-table') {
@@ -62,7 +63,10 @@ else if (commands[0] == 'migrate') {
 }
 
 else if (commands[0] == 'create-db') {
-    createDatabaseIfNotExists(process.env)
+    createEnv().then(() => {
+        createDatabaseIfNotExists(process.env)
+
+    })
 
 }
 

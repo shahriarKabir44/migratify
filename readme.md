@@ -10,18 +10,15 @@
         <code>npm i</code>
         on the terminal to install dependencies.
     </li>
-    <li>Create a fie <code>.env</code> and copy all the contents from <code>.env.example</code> and paste it on the
-        <code>.env</code> file.
-    </li>
+     
 </ol>
 <h2>Features</h2>
 <h3><u>Create database:</u></h3>
 Go to the project directory by typing
 <code>cd Nodejs_Database_Migrator</code>
 on your terminal.
-Make sure to write the database name on the <code>.env</code> file. </br>
 Then type <code> node index create-db</code> </br>
-This will create a database with the name written on the <code>.env</code> file. </br>
+This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a database for you.
 
 <h3><u>Create table:</u></h3>
 Go to the project directory by typing
