@@ -143,6 +143,9 @@ Type <code>node index migrate</code>
 
 This will run all the migration files and update the database schema.
 
+<h3> <u>Load from existing database:</u></h3>
+To create migration files from an existing database, type the command on the terminal <code>node index load-db</code>.
+This will ask the user for database name, password etc.
 
 <h3><u>Help:</u></h3>
 To see the list of commands,
