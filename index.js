@@ -1,6 +1,6 @@
 const { connectionObject, initConnection } = require('./utils/dbConnection')
 const fs = require('fs');
-const { createDatabaseIfNotExists } = require('./utils/primaryDBConnection');
+const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
@@ -42,7 +42,7 @@ else if (commands[0] == 'migrate') {
 
 
                 } catch (error) {
-                    console.log(fileName)
+                    console.log(error)
                 }
 
             }
@@ -75,7 +75,43 @@ else if (commands[0] == 'create-db') {
     })
 
 }
+else if (commands[0] == 'load-db') {
+    if (fs.existsSync('./.git')) {
+        fs.rmSync(__dirname + '/.git', {
+            recursive: true,
+        })
+    }
+    // createEnv(__dirname).then(() => {
+    require('dotenv').config()
+    if (!fs.existsSync('migrations')) {
+        fs.mkdirSync('migrations', { recursive: true });
+    }
 
+    createMigrationFilesFromDb(process.env)
+        .then(contents => {
+            for (let tableName in contents) {
+                const newFileName = (new Date()) * 1 + "create-table_" + tableName + '.js'
+
+                if (!fs.existsSync('./migrations/index.txt')) {
+                    fs.writeFileSync('./migrations/index.txt', `${newFileName}`)
+                    fs.writeFileSync('./migrations/logs.txt', `${newFileName}`)
+
+                }
+                else {
+                    let migratorIndexContents = fs.readFileSync('./migrations/index.txt').toString()
+                    fs.writeFileSync(__dirname + '/migrations/index.txt', migratorIndexContents + `\n${newFileName}`)
+                    fs.writeFileSync(__dirname + '/migrations/logs.txt', migratorIndexContents + `\n${newFileName}`)
+
+                }
+
+                fs.writeFileSync('./migrations/' + newFileName, contents[tableName])
+
+            }
+        })
+
+    //  })
+
+}
 else if (commands[0] == 'clear') {
     if (fs.existsSync('./migrations/logs.txt')) {
         fs.unlinkSync('./migrations/logs.txt')
@@ -83,6 +119,7 @@ else if (commands[0] == 'clear') {
 }
 else if (commands[0] == 'help') {
     console.log("create-db : creates database with the name given in the .env file")
+    console.log("load-db : creates migration files from an existing database")
     console.log('create-table <table name>: creates a migration file for creating a table named <table name>')
     console.log('update-table <table name>: creates a migration file for updating a table named <table name>')
     console.log('drop-table <table name>: creates a migration file for dropping a table named <table name>')

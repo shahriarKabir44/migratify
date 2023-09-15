@@ -17,10 +17,15 @@ async function createEnv(path) {
         })
     }
     let dbName = await takeInput('Database name ')
-    let dbPort = await takeInput('port (typically 3306)')
-    let dbHost = await takeInput('database host (typically localhost) ')
+    let dbPort = await takeInput('port (typically 3306. leave blank if so)')
+    if (dbPort == '') dbPort = 3306
+    let dbHost = await takeInput('database host (typically localhost. leave blank if so) ')
+    if (dbHost == '') dbHost = 'localhost'
+
     let dbPassword = await takeInput('password ')
-    let dbUser = await takeInput('user (typically root)')
+    let dbUser = await takeInput('user (typically root. leave blank if so)')
+    if (dbUser == '') dbUser = 'root'
+
     if (!fs.existsSync(path + '/.env')) {
         fs.writeFileSync(path + '/.env', "")
     }

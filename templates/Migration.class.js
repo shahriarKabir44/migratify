@@ -9,8 +9,8 @@ class Column {
     isPrimaryKey = false
     isAutoIncrement = false
     isUnique = false
-    setPrimaryKey(flag = false) {
-        this.isPrimaryKey = flag
+    setPrimaryKey(flag = true) {
+        this.isPrimaryKey = true
         if (flag) {
             this.isAutoIncrement = true
             this.isNullable = false
@@ -65,6 +65,7 @@ class Table {
     columns = []
     columnsToRemove = []
     foreignKeys = []
+    foreignKeyObjs = []
     columnsToUpdate = []
     columnsToRename = []
     name = ""
@@ -80,6 +81,7 @@ class Table {
         return newColumn
     }
     addForeignKey(columnName, refTable, refColumn) {
+        this.foreignKeyObjs.push({ columnName, refTable, refColumn })
         this.foreignKeys.push(`   FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     removeProperty(columnName) {
@@ -114,6 +116,58 @@ class Table {
         ${this.foreignKeys.join(',')}
         );`
         return Table.executeSql(sql)
+    }
+    /**
+     * 
+     * @param {[any]} tableInfo 
+     * @param {[any]} foreignKeys 
+     */
+    createMigrationFileText(tableInfo, foreignKeys) {
+        tableInfo.forEach(col => {
+            let newColumn = new Column(col.Field)
+            if (col.Key == 'PRI') {
+
+                this.setID(col.Field)
+                return
+
+            }
+            this.columns.push(newColumn)
+            let type = col.Type.toUpperCase() + ""
+            console.log(type)
+            if (type.startsWith('TEXT') || type.startsWith('LONGTEXT'))
+                type = 'TEXT(65536)'
+            newColumn.setDataType(type)
+                .setNullable(col.Null == 'YES')
+                .setDefaultValue(col.Detault)
+                .setUnique(col.Key == 'UNI')
+        })
+        foreignKeys.forEach(fkey => {
+            this.addForeignKey(fkey.source_column, fkey.target_table, fkey.target_column)
+        })
+        return this.getMigrationFileTextUtil()
+    }
+    getMigrationFileTextUtil() {
+        let text = `const {Table} = require('../templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
+
+        this.columns.forEach((col) => {
+            if (col.isPrimaryKey) {
+                let descText = `newTable.setID('${col.name}');\n`
+                text += descText
+                return
+            }
+            let descText = `newTable.addColumn('${col.name}','${col.dataType}')\n`
+            descText += `\t.setNullable(${col.isNullable})\n`
+            descText += `\t .setDefaultValue('${col.defaultValue}')\n`
+            descText += `\t .setUnique(${col.isUnique})\n`
+            text += descText
+        })
+        this.foreignKeyObjs.forEach(fkey => {
+            let { columnName, refTable, refColumn } = fkey
+            let descText = `newTable.addForeignKey('${columnName}','${refTable}','${refColumn}');\n`
+            text += descText
+        })
+        text += `module.exports = async () => {\n\tnewTable.create()\n}`
+        return text
     }
     update() {
         let sql = `alter table ${this.name} ${this.columns.map((column) =>
