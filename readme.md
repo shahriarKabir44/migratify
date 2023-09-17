@@ -135,3 +135,9 @@ This will ask the user for database name, password etc.
 <h3><u>Help:</u></h3>
 To see the list of commands,
 Type <code>migratify help</code>
+
+
+<h3><u>Dependencies:</u></h3>
+<ol>
+    <li>mysql2</li>
+</ol>
