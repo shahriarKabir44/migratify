@@ -12,5 +12,8 @@
   "dependencies": {
     "dotenv": "^16.3.1",
     "mysql2": "^3.1.2"
+  },
+  "bin": {
+    "ndm": "./index.js"
   }
 }

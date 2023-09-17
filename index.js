@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const { connectionObject, initConnection } = require('./utils/dbConnection')
 const fs = require('fs');
 const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
