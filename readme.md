@@ -4,18 +4,18 @@
 
 <h2>How to use:</h2>
 <ol>
-    <li>type <code>npm i -g ndm</code>
+    <li>type <code>npm i -g migratify</code>
     </li>
     <li>That's it</li>
 </ol>
 <h2>Features</h2>
 <h3><u>Create database:</u></h3>
-Go to your project directory and type <br> <code> ndm create-db</code> </br>
+Go to your project directory and type <br> <code> migratify create-db</code> </br>
 This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a
 database for you.
 
 <h3><u>Create table:</u></h3>
-Go to your project directory and type <code> ndm create-table tablename </code>. </br>
+Go to your project directory and type <code> migratify create-table tablename </code>. </br>
 This will create a migration file in the <code>migrations</code></br> directory. Replace the <code>tablename</code>
 argument with the name of the table you want to create. Open the newly created file in your code editor. It will look
 something like this: <br>
@@ -69,7 +69,7 @@ Here is a list of methods that you can use to add properties in your table:
 
 
 <h3><u>Update table:</u></h3>
-Go to your project directory and type <code> ndm update-table tablename </code>. </br>
+Go to your project directory and type <code> migratify update-table tablename </code>. </br>
 This will create a migration file in the <code>migrations</code></br> directory. Replace the <code>tablename</code>
 argument with the name of the table you want to create. Open the newly created file in your code editor. It will look
 something like this: <br>
@@ -124,14 +124,14 @@ Here is a list of methods that you can use to update your table:
 
 <h3><u>Migrate:</u></h3>
 To commit the changes to the database, run the following command:
-Type <code>ndm migrate</code>
+Type <code>migratify migrate</code>
 
 This will run all the migration files and update the database schema.
 
 <h3> <u>Load from existing database:</u></h3>
-To create migration files from an existing database, type the command on the terminal <code>ndm load-db</code>.
+To create migration files from an existing database, type the command on the terminal <code>migratify load-db</code>.
 This will ask the user for database name, password etc.
 
 <h3><u>Help:</u></h3>
 To see the list of commands,
-Type <code>ndm help</code>
+Type <code>migratify help</code>
