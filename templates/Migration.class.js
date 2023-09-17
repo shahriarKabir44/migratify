@@ -133,13 +133,12 @@ class Table {
             }
             this.columns.push(newColumn)
             let type = col.Type.toUpperCase() + ""
-            console.log(type)
             if (type.startsWith('TEXT') || type.startsWith('LONGTEXT'))
                 type = 'TEXT(65536)'
             newColumn.setDataType(type)
-                .setNullable(col.Null == 'YES')
                 .setDefaultValue(col.Detault)
                 .setUnique(col.Key == 'UNI')
+            if (col.Null == 'YES') newColumn.setNullable()
         })
         foreignKeys.forEach(fkey => {
             this.addForeignKey(fkey.source_column, fkey.target_table, fkey.target_column)

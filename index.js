@@ -62,31 +62,35 @@ else if (commands[0] == 'migrate') {
 }
 
 else if (commands[0] == 'create-db') {
-    if (fs.existsSync('./.git')) {
-        fs.rmSync(__dirname + '/.git', {
-            recursive: true,
-        })
-    }
-    createEnv(__dirname).then(() => {
+
+    (async () => {
+        if (fs.existsSync('./.git')) {
+            fs.rmSync(__dirname + '/.git', {
+                recursive: true,
+            })
+        }
+        await createEnv(__dirname)
         require('dotenv').config()
 
         createDatabaseIfNotExists(process.env)
 
-    })
+    })()
+
 
 }
 else if (commands[0] == 'load-db') {
-    if (fs.existsSync('./.git')) {
-        fs.rmSync(__dirname + '/.git', {
-            recursive: true,
-        })
-    }
-    createEnv(__dirname).then(() => {
+
+    (async () => {
+        if (fs.existsSync('./.git')) {
+            fs.rmSync(__dirname + '/.git', {
+                recursive: true,
+            })
+        }
+        await createEnv(__dirname)
         require('dotenv').config()
         if (!fs.existsSync('migrations')) {
             fs.mkdirSync('migrations', { recursive: true });
         }
-
         createMigrationFilesFromDb(process.env)
             .then(contents => {
                 for (let tableName in contents) {
@@ -108,8 +112,8 @@ else if (commands[0] == 'load-db') {
 
                 }
             })
+    })()
 
-    })
 
 }
 else if (commands[0] == 'clear') {

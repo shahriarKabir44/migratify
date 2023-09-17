@@ -1,5 +1,6 @@
 const mysql = require('mysql2');
 const { Table } = require('../templates/Migration.class');
+const { topologicalSort } = require('./topologicalSort');
 let primaryConnectionObject = {
     connection: null
 };
@@ -45,49 +46,63 @@ async function createMigrationFilesFromDb(env) {
     let fileContents = {}
 
     let tables = await executeSqlAsyncPrimary({
-        sql: `SELECT table_name
+        sql: `SELECT table_name as name
             FROM information_schema.tables
             WHERE table_schema = ?;
             `,
         values: [env.dbName]
     })
-    let promises = []
-    tables.forEach(({ TABLE_NAME }) => {
-        promises.push((async () => {
-            let tableInfo = null
-            let foreignKeys = null
-            await Promise.all([
-                executeSqlAsyncPrimary({
-                    sql: `DESCRIBE ${env.dbName}.${TABLE_NAME};`,
-                    values: []
-                }).then(info => {
-                    tableInfo = info
-                }),
-                executeSqlAsyncPrimary({
-                    sql: `SELECT
-                        con.constraint_name AS foreign_key_name,
+    tables = tables.map(({ name }) => name)
+    let foreignKeys = await executeSqlAsyncPrimary({
+        sql: `SELECT
+                con.table_name AS source_table,
+                col.column_name AS source_column,
+                con.referenced_table_name AS target_table,
+                col.referenced_column_name AS target_column
+            FROM
+                information_schema.key_column_usage AS col
+                JOIN information_schema.referential_constraints AS con ON col.constraint_name = con.constraint_name
+            WHERE
+                col.table_schema = '${env.dbName}'
+                AND col.table_name in (
+                    SELECT table_name
+                    FROM
+                        information_schema.tables
+                    WHERE table_schema = '${env.dbName}'
+                );`,
+        values: []
+    })
+    let sortedTables = topologicalSort(tables, foreignKeys)
+    for (let tableName of sortedTables) {
+        let cols = []
+        let fkeys = []
+        await Promise.all([
+            executeSqlAsyncPrimary({
+                sql: `DESCRIBE ${env.dbName}.${tableName};`,
+                values: []
+            }).then(desc => {
+                cols = desc
+            }),
+            executeSqlAsyncPrimary({
+                sql: `SELECT
                         con.table_name AS source_table,
-                        col.column_name AS source_column,
                         con.referenced_table_name AS target_table,
+                        col.column_name AS source_column,
                         col.referenced_column_name AS target_column
                     FROM
                         information_schema.key_column_usage AS col
                         JOIN information_schema.referential_constraints AS con ON col.constraint_name = con.constraint_name
                     WHERE
                         col.table_schema = '${env.dbName}'
-                    AND col.table_name = '${TABLE_NAME}';`,
-                    values: []
-                }).then(info => {
-                    foreignKeys = info
-                })
-            ])
-            let newTable = new Table(TABLE_NAME)
-            fileContents[TABLE_NAME] = newTable.createMigrationFileText(tableInfo, foreignKeys)
-        })())
-    })
-    await Promise.all(promises)
-    primaryConnectionObject.connection.end()
-
+                        AND col.table_name = '${tableName}';`
+            }).then(keys => {
+                fkeys = keys
+            })
+        ])
+        let table = new Table(tableName)
+        fileContents[tableName] = table.createMigrationFileText(cols, fkeys)
+    }
+    primaryConnectionObject.close()
     return fileContents
 }
 
