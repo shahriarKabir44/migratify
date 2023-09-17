@@ -26,12 +26,20 @@ async function createEnv(path) {
     let dbUser = await takeInput('user (typically root. leave blank if so)')
     if (dbUser == '') dbUser = 'root'
 
-    if (!fs.existsSync(path + '/.env')) {
-        fs.writeFileSync(path + '/.env', "")
+
+    if (!fs.existsSync(path + '/config.json')) {
+        fs.writeFileSync(path + '/config.json', "")
     }
-    fs.writeFileSync(path + '/.env', `dbPassword="${dbPassword}"\ndbPort=${dbPort}\ndbName=${dbName}\ndbUser="${dbUser}"\ndbHost="${dbHost}"`)
+    fs.writeFileSync(path + '/config.json', `{"dbPassword":"${dbPassword}",\n"dbPort":"${dbPort}",\n"dbName":"${dbName}",\n"dbUser":"${dbUser}",\n"dbHost":"${dbHost}"}`)
 
     rl.close()
+    return {
+        dbName,
+        dbPort,
+        dbHost,
+        dbPassword,
+        dbUser
+    }
     rl.on('close', () => {
     })
 }

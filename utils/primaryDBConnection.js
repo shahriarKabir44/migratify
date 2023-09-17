@@ -102,7 +102,7 @@ async function createMigrationFilesFromDb(env) {
         let table = new Table(tableName)
         fileContents[tableName] = table.createMigrationFileText(cols, fkeys)
     }
-    primaryConnectionObject.close()
+    primaryConnectionObject.connection.close()
     return fileContents
 }
 
