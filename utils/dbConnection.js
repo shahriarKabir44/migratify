@@ -12,6 +12,7 @@ function initConnection(env) {
         database: env.dbName,
         port: env.dbPort
     })
+    console.log(connectionObject, __dirname)
     connectionObject.connection.connect()
 }
 
