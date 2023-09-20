@@ -24,6 +24,9 @@ class DBConnection {
         })
 
     }
+    static close() {
+        DBConnection.connection.end()
+    }
     static async executeSqlAsync({ sql, values }) {
         return new Promise(function (resolve, reject) {
             if (DBConnection.connection == null) {

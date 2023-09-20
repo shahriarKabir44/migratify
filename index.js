@@ -52,11 +52,11 @@ else if (commands[0] == 'migrate') {
             }
 
         }
+        DBConnection.close()
 
         let writeStream = fs.createWriteStream(dir + '/logs.txt')
         writeStream.write(executed)
         writeStream.close()
-        DBConnection.connection.end()
     })()
 
 
