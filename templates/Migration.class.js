@@ -146,7 +146,7 @@ class Table {
         return this.getMigrationFileTextUtil()
     }
     getMigrationFileTextUtil() {
-        let text = `const {Table} = require('../templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
+        let text = `const {Table} = require('migratify/templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
 
         this.columns.forEach((col) => {
             if (col.isPrimaryKey) {
