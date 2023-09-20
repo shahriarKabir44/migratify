@@ -22,7 +22,7 @@ class DBConnection {
     }
     static async executeSqlAsync({ sql, values }) {
         return new Promise(function (resolve, reject) {
-            connectionObject.connection.query({
+            this.connection.query({
                 sql, values
             }, (err, rows) => {
                 if (err) reject(err)
