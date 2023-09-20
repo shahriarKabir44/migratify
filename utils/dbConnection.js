@@ -24,8 +24,14 @@ class DBConnection {
         })
 
     }
-    static close() {
-        DBConnection.connection.end()
+    static async close() {
+        return new Promise((resolve, reject) => {
+            DBConnection.connection.end(e => {
+                if (e) reject()
+                else resolve()
+            })
+
+        })
     }
     static async executeSqlAsync({ sql, values }) {
         return new Promise(function (resolve, reject) {
