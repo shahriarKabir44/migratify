@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-const { connectionObject, initConnection } = require('./utils/dbConnection')
 const fs = require('fs');
 const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
+const { DBConnection } = require('./utils/dbConnection');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -29,7 +29,7 @@ else if (commands[0] == 'migrate') {
         }
         let env = require(dir + '/config.json')
         console.log(env)
-        initConnection(env)
+        await DBConnection.initConnection(env)
         const fileNames = fs.readFileSync(dir + '/index.txt').toString().split('\n')
         if (!fs.existsSync(dir + '/logs.txt')) {
             fs.writeFileSync(dir + '/logs.txt', "")

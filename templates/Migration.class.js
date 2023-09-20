@@ -1,5 +1,5 @@
+const { DBConnection } = require("../utils/dbConnection")
 
-const executeSqlAsync = require('../utils/promisify')
 
 class Column {
     name = ""
@@ -96,9 +96,7 @@ class Table {
     }
     static async executeSql(sql) {
         try {
-            let result = await executeSqlAsync({
-                sql
-            })
+            await DBConnection.executeSqlAsync({ sql })
         } catch (error) {
             console.log(error)
         }
