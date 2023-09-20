@@ -147,7 +147,7 @@ function createMigrationFiles(commands, type) {
     if (!fs.existsSync(dir)) {
         fs.mkdirSync(dir, { recursive: true });
     }
-    let templateStr = fs.readFileSync(`./templates/${type}.template.txt`).toString()
+    let templateStr = fs.readFileSync(__dirname + `/templates/${type}.template.txt`).toString()
     templateStr = templateStr.replace('-', commands[1])
 
     fs.writeFileSync(dir + '/' + newFileName, templateStr)
