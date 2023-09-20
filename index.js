@@ -28,7 +28,7 @@ else if (commands[0] == 'migrate') {
             fs.mkdirSync(dir, { recursive: true });
         }
         let env = require(dir + '/config.json')
-
+        console.log(env)
         initConnection(env)
         const fileNames = fs.readFileSync(dir + '/index.txt').toString().split('\n')
         if (!fs.existsSync(dir + '/logs.txt')) {
