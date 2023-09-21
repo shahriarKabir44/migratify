@@ -13,7 +13,8 @@
 <h3><u>Create database:</u></h3>
 Go to your project directory and type <br> <code> migratify create-db</code> </br>
 This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a
-database for you.
+database for you. And inside your project directory, it will create a folder called "migrations". This is where your
+migration files will be stored.
 
 <h3><u>Create table:</u></h3>
 Go to your project directory and type <code> migratify create-table tablename </code>. </br>
