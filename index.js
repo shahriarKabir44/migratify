@@ -28,7 +28,6 @@ else if (commands[0] == 'migrate') {
             fs.mkdirSync(dir, { recursive: true });
         }
         let env = require(dir + '/config.json')
-        console.log(env)
         await DBConnection.initConnection(env)
         const fileNames = fs.readFileSync(dir + '/index.txt').toString().split('\n')
         if (!fs.existsSync(dir + '/logs.txt')) {
@@ -52,11 +51,14 @@ else if (commands[0] == 'migrate') {
             }
 
         }
-        await DBConnection.close()
+        DBConnection.close()
+            .then(() => {
+                let writeStream = fs.createWriteStream(dir + '/logs.txt')
+                writeStream.write(executed)
+                writeStream.close()
+            })
 
-        let writeStream = fs.createWriteStream(dir + '/logs.txt')
-        writeStream.write(executed)
-        writeStream.close()
+
     })()
 
 

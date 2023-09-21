@@ -22,7 +22,7 @@ function createDatabaseIfNotExists(env) {
     initPrimaryConnection(env)
     primaryConnectionObject.connection.query({
         sql: `CREATE DATABASE IF NOT EXISTS ${env.dbName} DEFAULT CHARACTER SET = 'utf8mb4';`,
-        values: [env.dbName.toString()]
+        values: []
     }, (err, data) => {
         if (err) console.log(err, "oopsie")
         primaryConnectionObject.connection.end()

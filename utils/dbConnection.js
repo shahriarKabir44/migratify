@@ -25,8 +25,10 @@ class DBConnection {
 
     }
     static async close() {
+        console.log('closed')
         return new Promise((resolve, reject) => {
             DBConnection.connection.end(e => {
+                DBConnection.connection = null
                 if (e) reject()
                 else resolve()
             })

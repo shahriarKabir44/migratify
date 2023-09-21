@@ -138,7 +138,5 @@ To see the list of commands,
 Type <code>migratify help</code>
 
 
-<h3><u>Dependencies:</u></h3>
-<ol>
-    <li>mysql2</li>
-</ol>
+
+<code>  <a href="https://github.com/shahriarKabir44/migratify"><h3><i>Github Repo</i></h3></a></code>
