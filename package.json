@@ -6,7 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
+  "keywords": [
+    "cli",
+    "mysql",
+    "migrations"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {

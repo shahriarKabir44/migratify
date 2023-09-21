@@ -25,7 +25,7 @@ class DBConnection {
 
     }
     static async close() {
-        console.log('closed')
+
         return new Promise((resolve, reject) => {
             DBConnection.connection.end(e => {
                 DBConnection.connection = null
@@ -43,8 +43,12 @@ class DBConnection {
                         DBConnection.connection.query({
                             sql, values
                         }, (err, rows) => {
-                            if (err) reject(err)
-                            else resolve(rows)
+                            DBConnection.close()
+                                .then(() => {
+                                    if (err) reject(err)
+                                    else resolve(rows)
+                                })
+
                         })
                     })
             }
