@@ -6,7 +6,7 @@
 <ol>
     <li>type <code>npm i -g migratify</code> (for CLI)
     </li>
-    <li>type <code>npm i -g migratify</code> (inside your project directory for utility classes)</li>
+    <li>type <code>npm i migratify</code> (inside your project directory for utility classes)</li>
     <li>That's it</li>
 </ol>
 <h2>Features</h2>
