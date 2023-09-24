@@ -18,5 +18,8 @@
   },
   "bin": {
     "migratify": "./index.js"
+  },
+  "publishConfig": {
+    "@shahriarkabir:registry": "https://npm.pkg.github.com"
   }
 }
