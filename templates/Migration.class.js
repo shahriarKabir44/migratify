@@ -19,7 +19,6 @@ class Column {
     }
     setUnique(flag = false) {
         this.isUnique = flag
-        this.isNullable = false
         return this
     }
     constructor(columnName) {
