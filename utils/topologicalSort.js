@@ -27,7 +27,6 @@ function topologicalSort(vertices, edges) {
     for (let node = 0; node < vertices.length; node++) {
         if (outDegreeCount[node] == 0) {
             queue.push(node)
-            break
         }
     }
     let taken = new Set()
@@ -35,36 +34,16 @@ function topologicalSort(vertices, edges) {
         let top = queue.shift()
         res.push(top)
         taken.add(top)
-        if (indegreeNodes[top].length == 0) {
-            for (let node = 0; node < vertices.length; node++) {
-                if (outDegreeCount[node] == 0 && !taken.has(node)) {
-                    queue.push(node)
-                    taken.add(node)
-                    break
-                }
-            }
-            continue;
-        }
-        let found = 0
+
         for (let adj of indegreeNodes[top]) {
             outDegreeCount[adj]--
-            if (outDegreeCount[adj] == 0) {
+            if (outDegreeCount[adj] == 0 && !taken.has(adj)) {
                 queue.push(adj * 1)
                 taken.add(adj)
 
-                found = 1
             }
         }
-        if (found == 0) {
-            for (let node = 0; node < vertices.length; node++) {
-                if (outDegreeCount[node] == 0 && !taken.has(node)) {
-                    queue.push(node)
-                    taken.add(node)
-                    break
-                }
-            }
-            continue;
-        }
+
     }
     return res.map(node => vertices[node])
 }

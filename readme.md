@@ -138,6 +138,7 @@ This will ask the user for database name, password etc.
 To see the list of commands,
 Type <code>migratify help</code>
 
-
+<h3>Note:</h3>
+Please add the <code>logs.txt</code> and <code>config.txt</code> to your project's <code>.gitignore</code> file.
 
 <code>  <a href="https://github.com/shahriarKabir44/migratify"><h3><i>Github Repo</i></h3></a></code>
