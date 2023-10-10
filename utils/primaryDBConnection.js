@@ -11,7 +11,8 @@ function initPrimaryConnection(env) {
         host: env.dbHost,
         user: env.dbUser,
         password: env.dbPassword,
-        port: env.dbPort
+        port: env.dbPort,
+        ssl: env.ssl
     })
     primaryConnectionObject.connection.connect()
 }

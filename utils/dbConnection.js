@@ -13,7 +13,8 @@ class DBConnection {
                 user: env.dbUser,
                 password: env.dbPassword,
                 database: env.dbName,
-                port: env.dbPort
+                port: env.dbPort,
+                ssl: env.ssl
             })
 
             DBConnection.connection.connect((err) => {
