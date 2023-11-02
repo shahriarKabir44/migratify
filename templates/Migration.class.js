@@ -83,9 +83,8 @@ class Table {
         this.foreignKeyObjs.push({ columnName, refTable, refColumn })
         this.foreignKeys.push(`   FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
-    removeProperty(columnName) {
-        this.columns = this.columns.filter(column => column.name = columnName)
-        this.columnsToRemove.push(`drop column if exists ${columnName}`);
+    dropColumn(columnName) {
+        this.columnsToRemove.push(`drop column  ${columnName}`);
     }
 
     constructor(tableName) {
