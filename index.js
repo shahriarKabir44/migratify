@@ -38,9 +38,12 @@ else if (commands[0] == 'migrate') {
         for (let fileName of fileNames) {
             if (existingMap[fileName] == null) {
                 try {
-                    await require(dir + `/${fileName}`)()
+                    let data = await require(dir + `/${fileName}`)()
                     executed += fileName + '\n'
-
+                    if (!fs.existsSync(dir + '/metadata/')) {
+                        fs.mkdirSync(dir + '/metadata/', { recursive: true });
+                    }
+                    fs.writeFileSync(dir + '/metadata/' + fileName.replace('.js', '.json'), data)
 
                 } catch (error) {
                     console.log(error)
@@ -112,6 +115,10 @@ else if (commands[0] == 'load-db') {
                         fs.writeFileSync(dir + '/logs.txt', migratorIndexContents + `\n${newFileName}`)
 
                     }
+                    if (!fs.existsSync(dir + '/metadata/')) {
+                        fs.mkdirSync(dir + '/metadata/', { recursive: true });
+                    }
+                    fs.writeFileSync(dir + '/metadata/' + newFileName.replace('.js', '.json'), { "case": "create" })
 
                     fs.writeFileSync(dir + '/' + newFileName, contents[tableName])
 

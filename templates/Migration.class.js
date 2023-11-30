@@ -1,6 +1,6 @@
 const { DBConnection } = require("../utils/dbConnection")
-
-
+const fs = require('fs')
+const path = require('path')
 class Column {
     name = ""
     dataType = ""
@@ -67,6 +67,9 @@ class Table {
     foreignKeyObjs = []
     columnsToUpdate = []
     columnsToRename = []
+    nameOfcolumnsToRename = []
+    foreignKeysToDrop = []
+    foreignKeyObjsToDrop = []
     name = ""
     /**
      * 
@@ -81,13 +84,19 @@ class Table {
     }
     addForeignKey(columnName, refTable, refColumn) {
         this.foreignKeyObjs.push({ columnName, refTable, refColumn })
-        this.foreignKeys.push(`   FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
+        this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${refTable}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     dropColumn(columnName) {
         this.columnsToRemove.push(`drop column  ${columnName}`);
     }
 
+    dropForeignKey(refTable) {
+        this.foreignKeyObjsToDrop.push(refTable)
+        this.foreignKeysToDrop.push(`DROP FOREIGN KEY fk_${this.name}_${refTable}`)
+    }
+
     constructor(tableName) {
+
         this.name = tableName
         this.columns = []
         this.newlyAddedColumns = []
@@ -100,10 +109,11 @@ class Table {
         }
 
     }
+
     static async drop() {
         return Table.executeSql(`DROP TABLE ${this.name};`)
     }
-    create() {
+    async create() {
         let sql = `create table if not exists ${this.name}(
             ${this.columns.map(column => {
             return column.createSQL()
@@ -111,7 +121,10 @@ class Table {
         ${this.columns.length > 0 && this.foreignKeys.length > 0 ? ',' : ''}
         ${this.foreignKeys.join(',')}
         );`
-        return Table.executeSql(sql)
+        await Table.executeSql(sql)
+        return JSON.stringify({
+            "case": "create"
+        })
     }
     /**
      * 
@@ -164,37 +177,108 @@ class Table {
         text += `module.exports = async () => {\n\tnewTable.create()\n}`
         return text
     }
-    update() {
+    appendedList = []
+    appendAndCompare(list) {
+        let isFound = 0
+        for (let list of this.appendedList) {
+            if (list.length > 0) {
+                isFound = 1;
+                break
+            }
+        }
+        this.appendedList.push(list)
+        return isFound == 1 & list.length > 0
+    }
+    async update() {
+        this.appendedList.push(this.columns)
         let sql = `alter table ${this.name} ${this.columns.map((column) =>
             'ADD COLUMN  ' + column.createSQL()).join(',')}
-            ${this.columnsToRemove.length > 0 && this.columns.length > 0 ? ',' : ' '}
+            ${this.appendAndCompare(this.columnsToRemove) ? ',' : ' '}
             
             ${this.columnsToRemove.join(',')}
             
-            ${(this.columnsToRemove.length > 0 ||
-                this.columns.length > 0) &&
-                this.columnsToUpdate.length > 0
-                ? ',' : ' '}
+            ${this.appendAndCompare(this.columnsToUpdate) ? ',' : ' '}
 
              ${this.columnsToUpdate.map((column) =>
-                    'MODIFY ' + column.createSQL()).join(',')}
-            ${(this.columnsToRemove.length > 0 ||
-                this.columns.length > 0 ||
-                this.columnsToUpdate.length > 0) &&
-                this.foreignKeys.length > 0
-                ? ',' : ' '}
+                'MODIFY ' + column.createSQL()).join(',')}
+            ${this.appendAndCompare(this.foreignKeys) ? ',' : ' '}
+
             ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
-            ${(this.columnsToRemove.length > 0 ||
-                this.columns.length > 0 ||
-                this.columnsToUpdate.length > 0 ||
-                this.foreignKeys.length > 0) &&
-                this.columnsToRename.length > 0 ? "," : " "}
+
+            ${this.appendAndCompare(this.columnsToRename) ? "," : " "}
+            
             ${this.columnsToRename.join(',')}
-            ; `
-        return Table.executeSql(sql)
+
+            ${this.appendAndCompare(this.foreignKeysToDrop) ? "," : " "}
+            ${this.foreignKeysToDrop.join(',')}  ; `
+        let changes = await this.getChanges()
+        await Table.executeSql(sql)
+        return changes
 
     }
+    async getPreviousSchema() {
+        const env = require(process.cwd() + '/migrations/config.json')
+
+        let schema = await DBConnection.executeSqlAsync({
+            sql: `DESCRIBE ${this.name};`,
+            values: []
+        })
+        let _schema = {}
+        for (let col of schema) {
+            _schema[col.Field] = col
+        }
+        let foreignKeys = await DBConnection.executeSqlAsync({
+            sql: `SELECT
+                con.table_name AS source_table,
+                con.referenced_table_name AS target_table,
+                col.column_name AS source_column,
+                col.referenced_column_name AS target_column
+            FROM
+                information_schema.key_column_usage AS col
+                JOIN information_schema.referential_constraints AS con ON col.constraint_name = con.constraint_name
+            WHERE
+                col.table_schema = '${env.dbName}'
+                AND col.table_name = '${this.name}';`
+        })
+        let uniqueKeySet = {}
+        for (let key of foreignKeys) {
+            uniqueKeySet[JSON.stringify(key)] = key
+        }
+        let uniqueKeys = {}
+        for (let key in uniqueKeySet) uniqueKeys[`fk_${this.name}_${uniqueKeySet[key].target_table}`] = (uniqueKeySet[key])
+
+        return { schema: _schema, foreignKeys: uniqueKeys }
+    }
+    async getChanges() {
+        let { schema, foreignKeys } = await this.getPreviousSchema()
+        let addedColumns = this.columns
+
+        let alteredColumns = []
+        for (let alteredColumn of [...this.columnsToUpdate]) {
+            alteredColumns.push({ ...schema[alteredColumn], "newName": alteredColumn.name })
+        }
+        for (let alteredColumn of [...this.nameOfcolumnsToRename]) {
+            alteredColumns.push({ ...schema[alteredColumn.oldName], "newName": alteredColumn.newName })
+        }
+        let deletedColumns = []
+        for (let deletedColumn of this.columnsToRemove) {
+            deletedColumns.push(schema[deletedColumn])
+        }
+        let addedForeignKeys = this.foreignKeyObjs
+
+        let deletedForeignKeys = []
+        for (let deletedForeignKey of this.foreignKeyObjsToDrop) {
+            deletedForeignKeys.push(foreignKeys[`fk_${this.name}_${deletedForeignKey}`])
+        }
+        return JSON.stringify({
+            "case": "update",
+            "changes": {
+                addedColumns, alteredColumns, deletedColumns, addedForeignKeys, deletedForeignKeys
+            }
+        })
+    }
     renameColumn(oldName, newName) {
+        this.nameOfcolumnsToRename.push({ oldName, newName })
         this.columnsToRename.push(`RENAME COLUMN ${oldName} TO ${newName}`)
     }
     setID(idName) {
