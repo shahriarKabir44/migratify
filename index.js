@@ -148,6 +148,8 @@ else if (commands[0] == 'help') {
     console.log('update-table <table name>: creates a migration file for updating a table named <table name>')
     console.log('drop-table <table name>: creates a migration file for dropping a table named <table name>')
     console.log('migrate: runs the migrations')
+    console.log('rollback: undo the last migration file')
+
     console.log('clear: clears the migration history')
 
 }

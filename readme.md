@@ -112,12 +112,9 @@ Here is a list of methods that you can use to update your table:
             </td>
         </tr>
         <tr>
-            <td> <code>updateExistingColumn(columnName)</code> </td>
+            <td> <code> renameColumn(oldName, newName)</code> </td>
             <td>
-                Call this method to update an existing column.
-                You can use methods like:
-                <code>setDataType(dataType)</code> to set the data type of that column.
-                Also, <code>setUnique, setNullable, setDefaultValue</code> that are described earlier.
+                Renames a column to a new name
             </td>
         </tr>
     </thead>
@@ -133,6 +130,11 @@ This will run all the migration files and update the database schema.
 <h3> <u>Load from existing database:</u></h3>
 To create migration files from an existing database, type the command on the terminal <code>migratify load-db</code>.
 This will ask the user for database name, password etc.
+
+
+<h3> <u>Rollback:</u></h3>
+To undo the effect of the latest commit file, type the command on the terminal <code>migratify rollback</code>.
+Not only that it will roll back, it will also delete the migration file.
 
 <h3><u>Help:</u></h3>
 To see the list of commands,
