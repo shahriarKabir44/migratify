@@ -3,6 +3,7 @@ const fs = require('fs');
 const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
 const { DBConnection } = require('./utils/dbConnection');
+const { rollback } = require('./rollbackUtils/rollback');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -32,6 +33,7 @@ else if (commands[0] == 'migrate') {
             fs.writeFileSync(dir + '/logs.txt', "")
         }
         const existingList = fs.readFileSync(dir + '/logs.txt').toString().split('\n')
+        console.log(existingList)
         let existingMap = {}
         for (let existing of existingList) existingMap[existing] = 1
         let executed = existingList.join('\n')
@@ -52,9 +54,7 @@ else if (commands[0] == 'migrate') {
             }
 
         }
-        let writeStream = fs.createWriteStream(dir + '/logs.txt')
-        writeStream.write(executed)
-        writeStream.close()
+        fs.writeFileSync(dir + '/logs.txt', executed)
 
 
     })()
@@ -118,7 +118,7 @@ else if (commands[0] == 'load-db') {
                     if (!fs.existsSync(dir + '/metadata/')) {
                         fs.mkdirSync(dir + '/metadata/', { recursive: true });
                     }
-                    fs.writeFileSync(dir + '/metadata/' + newFileName.replace('.js', '.json'), { "case": "create" })
+                    fs.writeFileSync(dir + '/metadata/' + newFileName.replace('.js', '.json'), JSON.stringify({ "case": "create", "table": tableName }))
 
                     fs.writeFileSync(dir + '/' + newFileName, contents[tableName])
 
@@ -134,6 +134,13 @@ else if (commands[0] == 'clear') {
         fs.unlinkSync(dir + '/logs.txt')
     }
 }
+
+
+else if (commands[0] == 'rollback') {
+    rollback()
+}
+
+
 else if (commands[0] == 'help') {
     console.log("create-db : creates database with the name given in the .env file")
     console.log("load-db : creates migration files from an existing database")

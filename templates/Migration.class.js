@@ -68,6 +68,7 @@ class Table {
     columnsToUpdate = []
     columnsToRename = []
     nameOfcolumnsToRename = []
+    nameOfcolumnsToRemove = []
     foreignKeysToDrop = []
     foreignKeyObjsToDrop = []
     name = ""
@@ -87,6 +88,7 @@ class Table {
         this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${refTable}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     dropColumn(columnName) {
+        this.nameOfcolumnsToRemove.push(columnName)
         this.columnsToRemove.push(`drop column  ${columnName}`);
     }
 
@@ -123,7 +125,8 @@ class Table {
         );`
         await Table.executeSql(sql)
         return JSON.stringify({
-            "case": "create"
+            "case": "create",
+            "table": this.name
         })
     }
     /**
@@ -261,7 +264,7 @@ class Table {
             alteredColumns.push({ ...schema[alteredColumn.oldName], "newName": alteredColumn.newName })
         }
         let deletedColumns = []
-        for (let deletedColumn of this.columnsToRemove) {
+        for (let deletedColumn of this.nameOfcolumnsToRemove) {
             deletedColumns.push(schema[deletedColumn])
         }
         let addedForeignKeys = this.foreignKeyObjs
@@ -272,6 +275,7 @@ class Table {
         }
         return JSON.stringify({
             "case": "update",
+            "table": this.name,
             "changes": {
                 addedColumns, alteredColumns, deletedColumns, addedForeignKeys, deletedForeignKeys
             }
