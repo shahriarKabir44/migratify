@@ -85,16 +85,16 @@ class Table {
     }
     addForeignKey(columnName, refTable, refColumn) {
         this.foreignKeyObjs.push({ columnName, refTable, refColumn })
-        this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${refTable}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
+        this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${columnName}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     dropColumn(columnName) {
         this.nameOfcolumnsToRemove.push(columnName)
         this.columnsToRemove.push(`drop column  ${columnName}`);
     }
 
-    dropForeignKey(refTable) {
-        this.foreignKeyObjsToDrop.push(refTable)
-        this.foreignKeysToDrop.push(`DROP FOREIGN KEY fk_${this.name}_${refTable}`)
+    dropForeignKey(keyName) {
+        this.foreignKeyObjsToDrop.push(keyName)
+        this.foreignKeysToDrop.push(`DROP FOREIGN KEY fk_${this.name}_${keyName}`)
     }
 
     constructor(tableName) {
@@ -158,7 +158,7 @@ class Table {
         return this.getMigrationFileTextUtil()
     }
     getMigrationFileTextUtil() {
-        let text = `const {Table} = require('migratify/templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
+        let text = `const {Table} = require('../templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
 
         this.columns.forEach((col) => {
             if (col.isPrimaryKey) {
