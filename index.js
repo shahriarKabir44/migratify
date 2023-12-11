@@ -33,7 +33,6 @@ else if (commands[0] == 'migrate') {
             fs.writeFileSync(dir + '/logs.txt', "")
         }
         const existingList = fs.readFileSync(dir + '/logs.txt').toString().split('\n')
-        console.log(existingList)
         let existingMap = {}
         for (let existing of existingList) existingMap[existing] = 1
         let executed = existingList.join('\n')
