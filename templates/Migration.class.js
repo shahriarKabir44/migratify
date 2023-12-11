@@ -158,7 +158,7 @@ class Table {
         return this.getMigrationFileTextUtil()
     }
     getMigrationFileTextUtil() {
-        let text = `const {Table} = require('../templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
+        let text = `const {Table} = require('migrations/templates/Migration.class')\nlet newTable = new Table("${this.name}");\n`;
 
         this.columns.forEach((col) => {
             if (col.isPrimaryKey) {
@@ -177,7 +177,7 @@ class Table {
             let descText = `newTable.addForeignKey('${columnName}','${refTable}','${refColumn}');\n`
             text += descText
         })
-        text += `module.exports = async () => {\n\tnewTable.create()\n}`
+        text += `module.exports = async () => {\n\treturn newTable.create()\n}`
         return text
     }
     appendedList = []
