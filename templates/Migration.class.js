@@ -172,8 +172,13 @@ class Table {
             descText += `\t .setUnique(${col.isUnique})\n`
             text += descText
         })
+        let uniqueForeignKeys = new Set()
         this.foreignKeyObjs.forEach(fkey => {
-            let { columnName, refTable, refColumn } = fkey
+            uniqueForeignKeys.add(JSON.stringify(fkey))
+        })
+        this.foreignKeyObjs = Array.from(uniqueForeignKeys)
+        this.foreignKeyObjs.forEach(fkey => {
+            let { columnName, refTable, refColumn } = JSON.parse(fkey)
             let descText = `newTable.addForeignKey('${columnName}','${refTable}','${refColumn}');\n`
             text += descText
         })

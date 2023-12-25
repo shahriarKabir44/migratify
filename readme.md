@@ -22,7 +22,7 @@ This will create a migration file in the <code>migrations</code></br> directory.
 argument with the name of the table you want to create. Open the newly created file in your code editor. It will look
 something like this: <br>
 <code>
-const { Table } = require('../templates/Migration.class')
+const { Table } = require('migratify/Migration.class')
 let newTable =new Table("tablename")
 module.exports = async () => {
     newTable.create()
@@ -67,8 +67,6 @@ Here is a list of methods that you can use to add properties in your table:
         </tr>
     </thead>
 </table>
-
-
 
 <h3><u>Update table:</u></h3>
 Go to your project directory and type <code> migratify update-table tablename </code>. </br>
@@ -120,7 +118,6 @@ Here is a list of methods that you can use to update your table:
     </thead>
 </table>
 
-
 <h3><u>Migrate:</u></h3>
 To commit the changes to the database, run the following command:
 Type <code>migratify migrate</code>
@@ -130,7 +127,6 @@ This will run all the migration files and update the database schema.
 <h3> <u>Load from existing database:</u></h3>
 To create migration files from an existing database, type the command on the terminal <code>migratify load-db</code>.
 This will ask the user for database name, password etc.
-
 
 <h3> <u>Rollback:</u></h3>
 To undo the effect of the latest commit file, type the command on the terminal <code>migratify rollback</code>.
