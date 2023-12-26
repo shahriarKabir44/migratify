@@ -2,9 +2,8 @@
 const fs = require('fs');
 const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
-const { DBConnection } = require('./utils/dbConnection');
 const { rollback } = require('./rollbackUtils/rollback');
-const { dumpSchema } = require('./utils/schemaDump');
+const { dumpSchema, dumpData } = require('./utils/schemaDump');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -141,6 +140,7 @@ else if (commands[0] == 'rollback') {
 }
 
 else if (commands[0] == 'dump-schema') dumpSchema()
+else if (commands[0] == 'dump-data') dumpData()
 else if (commands[0] == 'help') {
     console.log("create-db : creates database with the name given in the .env file")
     console.log("load-db : creates migration files from an existing database")
@@ -150,6 +150,7 @@ else if (commands[0] == 'help') {
     console.log('migrate: runs the migrations')
     console.log('rollback: undo the last migration file')
     console.log('dump-schema: creates a SQL file of the schema')
+    console.log('dump-data: creates a SQL file of the schema and the data')
 
     console.log('clear: clears the migration history')
 

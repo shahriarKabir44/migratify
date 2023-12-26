@@ -123,6 +123,12 @@ To commit the changes to the database, run the following command:
 Type <code>migratify migrate</code>
 
 This will run all the migration files and update the database schema.
+<h3><u>Dump schema</u> </h3>
+
+To dump the schema of the database, run the command <code>migratify dump-data</code>.
+<h3><u>Dump Data</u> </h3>
+
+To dump the schema of the database along with its data, run the command <code>migratify dump-data</code>.
 
 <h3> <u>Load from existing database:</u></h3>
 To create migration files from an existing database, type the command on the terminal <code>migratify load-db</code>.
