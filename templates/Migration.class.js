@@ -113,7 +113,13 @@ class Table {
     }
 
     async drop() {
-        return Table.executeSql(`DROP TABLE ${this.name};`)
+        let previousState = await this.getPreviousSchema()
+        Table.executeSql(`DROP TABLE ${this.name};`)
+        return JSON.stringify({
+            "case": "drop",
+            "table": this.name,
+            structure: { ...previousState }
+        })
     }
     async create() {
         let sql = `create table if not exists ${this.name}(
@@ -150,6 +156,7 @@ class Table {
             newColumn.setDataType(type)
                 .setDefaultValue(col.Detault)
                 .setUnique(col.Key == 'UNI')
+            if (col['Default'] != null) newColumn.setDefaultValue(col['Default'])
             if (col.Null == 'YES') newColumn.setNullable()
         })
         foreignKeys.forEach(fkey => {
