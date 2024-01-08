@@ -112,7 +112,7 @@ class Table {
 
     }
 
-    static async drop() {
+    async drop() {
         return Table.executeSql(`DROP TABLE ${this.name};`)
     }
     async create() {
