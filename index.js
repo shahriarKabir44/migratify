@@ -35,12 +35,12 @@ else if (commands[0] == 'migrate') {
         const existingList = fs.readFileSync(dir + '/logs.txt').toString().split('\n')
         let existingMap = {}
         for (let existing of existingList) existingMap[existing] = 1
-        let executed = existingList.join('\n')
+        let executed = ' ' + existingList.join(' ')
         for (let fileName of fileNames) {
             if (existingMap[fileName] == null) {
                 try {
                     let data = await require(dir + `/${fileName}`)()
-                    executed += fileName + '\n'
+                    executed += fileName + ' '
                     if (!fs.existsSync(dir + '/metadata/')) {
                         fs.mkdirSync(dir + '/metadata/', { recursive: true });
                     }
@@ -53,7 +53,7 @@ else if (commands[0] == 'migrate') {
             }
 
         }
-        fs.writeFileSync(dir + '/logs.txt', executed)
+        fs.writeFileSync(dir + '/logs.txt', executed.trim().split(' ').join('\n'))
 
 
     })()

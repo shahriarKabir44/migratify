@@ -29,6 +29,7 @@ class Column {
         this.isPrimaryKey = false
         this.isAutoIncrement = false
         this.isUnique = false
+        this.isDefaultValueSet = false
     }
     setDataType(typeName) {
         this.dataType = typeName
@@ -39,6 +40,7 @@ class Column {
         return this
     }
     setDefaultValue(defaultValue = "") {
+        this.isDefaultValueSet = true
         this.defaultValue = defaultValue
         return this
     }
@@ -58,6 +60,12 @@ class Column {
         }
         return sql
 
+    }
+    createUpdateSQL() {
+        if (this.isDefaultValueSet) {
+            return `ALTER COLUMN ${this.name} set DEFAULT "${this.defaultValue}"`
+        }
+        return "MODIFY " + this.createSQL()
     }
 }
 class Table {
@@ -207,7 +215,7 @@ class Table {
     async update() {
         this.appendedList.push(this.columns)
         let sql = `alter table ${this.name} ${this.columns.map((column) =>
-            'ADD COLUMN  ' + column.createSQL()).join(',')}
+            'ADD COLUMN  ' + column.createUpdateSQL()).join(',')}
             ${this.appendAndCompare(this.columnsToRemove) ? ',' : ' '}
             
             ${this.columnsToRemove.join(',')}
@@ -215,7 +223,7 @@ class Table {
             ${this.appendAndCompare(this.columnsToUpdate) ? ',' : ' '}
 
              ${this.columnsToUpdate.map((column) =>
-                'MODIFY ' + column.createSQL()).join(',')}
+                column.createUpdateSQL()).join(',')}
             ${this.appendAndCompare(this.foreignKeys) ? ',' : ' '}
 
             ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
