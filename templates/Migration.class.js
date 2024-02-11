@@ -61,6 +61,10 @@ class Column {
         return sql
 
     }
+
+    createAddSQL() {
+        return `ADD COLUMN ${this.createSQL()}`
+    }
     createUpdateSQL() {
         if (this.isDefaultValueSet) {
             return `ALTER COLUMN ${this.name} set DEFAULT "${this.defaultValue}"`
@@ -215,7 +219,7 @@ class Table {
     async update() {
         this.appendedList.push(this.columns)
         let sql = `alter table ${this.name} ${this.columns.map((column) =>
-            'ADD COLUMN  ' + column.createUpdateSQL()).join(',')}
+            column.createAddSQL()).join(',')}
             ${this.appendAndCompare(this.columnsToRemove) ? ',' : ' '}
             
             ${this.columnsToRemove.join(',')}
