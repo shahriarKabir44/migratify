@@ -98,6 +98,7 @@ class Table {
     foreignKeyObjsToDrop = []
     name = ""
 
+    static isDisperseMode = false;
 
     rename(newName) {
         this.alteredName = newName;
@@ -312,6 +313,7 @@ class Table {
 
     }
     async getPreviousSchema() {
+        if (Table.isDisperseMode) return null;
         const env = require(process.cwd() + '/migrations/config.json')
 
         let schema = await DBConnection.executeSqlAsync({
@@ -346,6 +348,8 @@ class Table {
         return { schema: _schema, foreignKeys: uniqueKeys }
     }
     async getChanges() {
+        if (Table.isDisperseMode) return null;
+
         let { schema, foreignKeys } = await this.getPreviousSchema()
         let addedColumns = this.columns
 

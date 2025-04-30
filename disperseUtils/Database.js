@@ -85,6 +85,7 @@ class Database {
         DBConnection.credential = this.credential;
         //await DBConnection.initConnection();
         await DBConnection.beginTransaction();
+        Table.isDisperseMode = true;
         console.log(`=======================================================================`);
         console.log(`Processing database: ${this.Name}`);
         const rl = Database.readlineObj ?? readline.createInterface({
@@ -191,7 +192,6 @@ class Database {
             for (let tableToDelete of tablesToDelete) {
                 let question = (`The Table ${tableToDelete.name} is not found on the source database!\n1=>Drop it\n2=>Modify It\nDefault: Keep it`);
                 let task = await takeInput(question);
-                if (task * 1 != 1 && task * 1 != 2) continue;
                 if (task == 1) continue;
                 if (task == 2) {
                     tablesToRename.push(tableToDelete);
@@ -369,6 +369,8 @@ class Database {
             await DBConnection.rollback();
         }
         finally {
+            Table.isDisperseMode = false;
+
             DBConnection.credential = null;
             DBConnection.ShouldCloseConnectionNow = true;
             await DBConnection.endTransaction();
