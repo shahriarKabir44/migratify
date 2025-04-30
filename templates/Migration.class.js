@@ -9,6 +9,13 @@ class Column {
     isPrimaryKey = false
     isAutoIncrement = false
     isUnique = false
+    modifiedName = "";
+
+    setNewName(newName) {
+        this.modifiedName = newName;
+        return this;
+    }
+
     setPrimaryKey(flag = true) {
         this.isPrimaryKey = true
         if (flag) {
@@ -47,7 +54,12 @@ class Column {
 
     createSQL() {
 
-        let sql = `${this.name} ${this.dataType} `
+        let sql = `${this.name} `
+
+        if (this.modifiedName != "") {
+            sql += " " + this.modifiedName + " "
+        }
+        sql += ` ${this.dataType} `
         if (!this.isNullable) sql += 'NOT NULL '
         if (this.isPrimaryKey) {
             sql += 'PRIMARY KEY AUTO_INCREMENT '
@@ -69,11 +81,12 @@ class Column {
         if (this.isDefaultValueSet) {
             return `ALTER COLUMN ${this.name} set DEFAULT "${this.defaultValue}"`
         }
-        return "MODIFY " + this.createSQL()
+        return "CHANGE COLUMN " + this.createSQL()
     }
 }
 class Table {
-    columns = []
+    columns = [];
+    alteredName = "";
     columnsToRemove = []
     foreignKeys = []
     foreignKeyObjs = []
@@ -84,6 +97,13 @@ class Table {
     foreignKeysToDrop = []
     foreignKeyObjsToDrop = []
     name = ""
+
+
+    rename(newName) {
+        this.alteredName = newName;
+        return this;
+    }
+
     /**
      * 
      * @param {String} columnName 
@@ -95,8 +115,8 @@ class Table {
         newColumn.setDataType(dataType)
         return newColumn
     }
-    addForeignKey(columnName, refTable, refColumn) {
-        this.foreignKeyObjs.push({ columnName, refTable, refColumn })
+    addForeignKey(columnName, refTable, refColumn, keyName = "") {
+        this.foreignKeyObjs.push({ columnName, refTable, refColumn, keyName })
         this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${columnName}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     dropColumn(columnName) {
@@ -124,6 +144,46 @@ class Table {
 
     }
 
+    /**
+     * 
+     * @param {Table} table 
+     */
+    compare(table) {
+        let newCols = Table.findNonExistentCols(this, table);
+        let newFKeys = Table.findNonExistentFkeys(this, table);
+        let colsToDelete = Table.findNonExistentCols(table, this);
+        let fkeysToDelete = Table.findNonExistentFkeys(table, this);
+        return { newCols, newFKeys, colsToDelete, fkeysToDelete };
+    }
+    /**
+     * 
+     * @param {Table} src 
+     * @param {Table} dest 
+     */
+    static findNonExistentCols(src, dest) {
+        let newCols = [];
+        src.columns.forEach(col => {
+            let otherTableCol = dest.columns.filter(x => x.name == col.name && x.dataType == col.dataType)[0];
+            if (!otherTableCol) newCols.push({ ...col, tableName: src.name });
+
+        });
+        return newCols;
+    }
+    /**
+     * 
+     * @param {Table} src 
+     * @param {Table} dest 
+     */
+    static findNonExistentFkeys(src, dest) {
+        let newFKeys = [];
+
+        src.foreignKeyObjs.forEach(fkey => {
+            let otherTableFkey = dest.foreignKeyObjs.filter(x => x.columnName == fkey.columnName)[0];
+            if (!otherTableFkey) newFKeys.push({ ...fkey, tableName: src.name });
+        });
+        return newFKeys;
+    }
+
     async drop() {
         let previousState = await this.getPreviousSchema()
         Table.executeSql(`DROP TABLE ${this.name};`)
@@ -147,12 +207,9 @@ class Table {
             "table": this.name
         })
     }
-    /**
-     * 
-     * @param {[any]} tableInfo 
-     * @param {[any]} foreignKeys 
-     */
-    createMigrationFileText(tableInfo, foreignKeys) {
+
+
+    createTableStructure(tableInfo, foreignKeys) {
         tableInfo.forEach(col => {
             let newColumn = new Column(col.Field)
             if (col.Key == 'PRI') {
@@ -172,8 +229,17 @@ class Table {
             if (col.Null == 'YES') newColumn.setNullable()
         })
         foreignKeys.forEach(fkey => {
-            this.addForeignKey(fkey.source_column, fkey.target_table, fkey.target_column)
+            this.addForeignKey(fkey.source_column, fkey.target_table, fkey.target_column, fkey.cname)
         })
+    }
+
+    /**
+     * 
+     * @param {[any]} tableInfo 
+     * @param {[any]} foreignKeys 
+     */
+    createMigrationFileText(tableInfo, foreignKeys) {
+        this.createTableStructure(tableInfo, foreignKeys);
         return this.getMigrationFileTextUtil()
     }
     getMigrationFileTextUtil() {
@@ -218,7 +284,9 @@ class Table {
     }
     async update() {
         this.appendedList.push(this.columns)
-        let sql = `alter table ${this.name} ${this.columns.map((column) =>
+        let sql = `alter table ${this.name}
+            ${this.alteredName ? 'rename to ' + this.alteredName : ''}
+        ${this.columns.map((column) =>
             column.createAddSQL()).join(',')}
             ${this.appendAndCompare(this.columnsToRemove) ? ',' : ' '}
             
@@ -260,6 +328,7 @@ class Table {
                 con.referenced_table_name AS target_table,
                 col.column_name AS source_column,
                 col.referenced_column_name AS target_column
+                
             FROM
                 information_schema.key_column_usage AS col
                 JOIN information_schema.referential_constraints AS con ON col.constraint_name = con.constraint_name
@@ -315,6 +384,8 @@ class Table {
         column.setPrimaryKey(true)
         column.setDataType('int')
     }
+
+
     updateExistingColumn(columnName) {
         let column = new Column(columnName)
         this.columnsToUpdate.push(column)
@@ -325,4 +396,4 @@ class Table {
 
 
 
-module.exports = { Table }
+module.exports = { Table, Column }

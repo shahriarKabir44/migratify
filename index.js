@@ -4,6 +4,7 @@ const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./uti
 const { createEnv } = require('./utils/userInput');
 const { rollback } = require('./rollbackUtils/rollback');
 const { dumpSchema, dumpData } = require('./utils/schemaDump');
+const { prompDisperseDb } = require('./disperseUtils/promptHandler');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -41,6 +42,7 @@ else if (commands[0] == 'migrate') {
                 try {
                     let data = await require(dir + `/${fileName}`)()
                     executed += fileName + ' '
+                    existingList.push(fileName)
                     if (!fs.existsSync(dir + '/metadata/')) {
                         fs.mkdirSync(dir + '/metadata/', { recursive: true });
                     }
@@ -53,7 +55,7 @@ else if (commands[0] == 'migrate') {
             }
 
         }
-        fs.writeFileSync(dir + '/logs.txt', executed.trim().split(' ').join('\n'))
+        fs.writeFileSync(dir + '/logs.txt', existingList.join('\n'))
 
 
     })()
@@ -139,6 +141,10 @@ else if (commands[0] == 'rollback') {
     rollback()
 }
 
+else if (commands[0] == 'disperse') {
+    prompDisperseDb()
+}
+
 else if (commands[0] == 'dump-schema') dumpSchema()
 else if (commands[0] == 'dump-data') dumpData()
 else if (commands[0] == 'help') {
@@ -157,6 +163,9 @@ else if (commands[0] == 'help') {
 }
 
 function createMigrationFiles(commands, type) {
+    if (!commands[1]) {
+        throw new Error("Pease select a table name!");
+    }
     const newFileName = (new Date()) * 1 + commands[0] + "_" + commands[1] + '.js'
     let dir = process.cwd() + '/migrations'
     if (!fs.existsSync(dir)) {
