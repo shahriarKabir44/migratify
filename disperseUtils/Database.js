@@ -139,6 +139,7 @@ class Database {
                 }
                 else if (task * 1 == 2) {
                     let newName = await takeInput("Please Provide the New Name! Leave blank if unchanged");
+
                     let newDataType = await takeInput("Please Provide the Data Type! Leave blank if unchanged");
                     let newIsNullable = (await takeInput("Nullable? (1/0) Leave blank if unchanged"));
                     if (!newName || newName == "") newName = colToDelete.name;
@@ -195,8 +196,14 @@ class Database {
                 if (task == 1) continue;
                 if (task == 2) {
                     tablesToRename.push(tableToDelete);
-                    let newName = await takeInput("Please provide new table name!");
-                    tableToDelete.newName = newName;
+                    while (1) {
+                        let newName = await takeInput("Please provide new table name!");
+                        if (newName == "") {
+                            console.log("New Table name can not be blank!");
+                            continue;
+                        }
+                        tableToDelete.newName = newName;
+                    }
                 }
                 else {
                     tablesToKeep.push(tableToDelete);

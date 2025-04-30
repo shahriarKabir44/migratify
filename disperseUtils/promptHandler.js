@@ -24,8 +24,13 @@ async function prompDisperseDb(path) {
         let settingFromFile = await takeInput(`Load settings from a json file? \nType the file name from the current directory (${process.cwd()}) without extension. Leave blank otherwise!`);
         let settings = null;
         if (settingFromFile != "") {
-            let dir = Path.join(process.cwd(), `${settingFromFile}.json`);
-            settings = JSON.parse(fs.readFileSync(dir, "utf-8"));
+            try {
+                let dir = Path.join(process.cwd(), `${settingFromFile}.json`);
+                settings = JSON.parse(fs.readFileSync(dir, "utf-8"));
+
+            } catch (error) {
+                console.log("Invalid file name! Please provide the credentials!");
+            }
         }
         if (settings == null) {
             let srcDbName = await takeInput('Source Db Name?');
