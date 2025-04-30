@@ -10,6 +10,15 @@
     <li>That's it</li>
 </ol>
 <h2>Features</h2>
+
+<h3>🤩New Feature!</h3>
+A new killer feature that makes the shipping the changes from one your development database to other databases hassle free!
+An all new dispersion tool that makes this magic happen! Just type 
+<code>migratify disperse</code>
+and it will do its trick! You can also save the setting for further operations on the same databases! 
+
+#### Note: you need to have migratify globally!
+
 <h3><u>Create database:</u></h3>
 Go to your project directory and type <br> <code> migratify create-db</code> </br>
 This will ask you for your database name, password, user, host etc. Type the answers accordingly. And it will create a

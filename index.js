@@ -147,7 +147,7 @@ else if (commands[0] == 'disperse') {
 
 else if (commands[0] == 'dump-schema') dumpSchema()
 else if (commands[0] == 'dump-data') dumpData()
-else if (commands[0] == 'help') {
+else if (commands[0] == 'help' || !commands[0]) {
     console.log("create-db : creates database with the name given in the .env file")
     console.log("load-db : creates migration files from an existing database")
     console.log('create-table <table name>: creates a migration file for creating a table named <table name>')
@@ -159,7 +159,7 @@ else if (commands[0] == 'help') {
     console.log('dump-data: creates a SQL file of the schema and the data')
 
     console.log('clear: clears the migration history')
-
+    console.log("disperse : Ships your database changes from a source database to multiple databases!");
 }
 
 function createMigrationFiles(commands, type) {
