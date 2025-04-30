@@ -191,7 +191,7 @@ class Database {
             let tablesToRename = [];
 
             for (let tableToDelete of tablesToDelete) {
-                let question = (`The Table ${tableToDelete.name} is not found on the source database!\n1=>Drop it\n2=>Modify It\nDefault: Keep it`);
+                let question = (`The Table "${this.Name}.${tableToDelete.name}" is not found on the source database!\n1=>Drop it\n2=>Modify It\nDefault: Keep it`);
                 let task = await takeInput(question);
                 if (task == 1) continue;
                 if (task == 2) {
