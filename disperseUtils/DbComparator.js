@@ -1,4 +1,4 @@
-const { describeDb, initPrimaryConnection, primaryConnectionObject } = require('../utils/primaryDBConnection');
+const { describeDb, initPrimaryMySqlConnection, primaryConnectionObject } = require('../utils/primaryDBConnection');
 const { Database } = require('./Database');
 
 class DbComparator {
@@ -35,7 +35,7 @@ class DbComparator {
 
     async beginProcess() {
         try {
-            initPrimaryConnection(this.dbConnectionCommonCredential);
+            initPrimaryMySqlConnection(this.dbConnectionCommonCredential);
 
             for (let otherDbName of [...this.destDbNames, this.srcDbName]) {
                 await describeDb(this.generateCredential(otherDbName), false)

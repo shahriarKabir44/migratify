@@ -3,6 +3,8 @@ const { DbComparator } = require('./DbComparator');
 const fs = require('fs')
 const Path = require('path');
 const { Database } = require('./Database');
+const sql = require('mssql/msnodesqlv8');
+
 async function prompDisperseDb(path) {
 
     const rl = readline.createInterface({
@@ -40,9 +42,9 @@ async function prompDisperseDb(path) {
                 throw new Error("Destination database list can not contain source database!");
             }
 
-            // let dialectEnumId = await takeInput('Dialect?  1=> MySQL (default)');
+            let dialectEnumId = await takeInput('Dialect?  \n1=> MySQL (default)\n2=> MS SQL (Windows Authentication)');
             let dialect = 'mysql';
-            if (dialect == 'mysql') {
+            if (dialectEnumId == '1' || dialectEnumId == '') {
                 let dbPort = await takeInput('port (typically 3306. leave blank if so)')
                 if (dbPort == '') dbPort = 3306
                 let dbHost = await takeInput('database host (typically localhost. leave blank if so) ')
@@ -57,6 +59,17 @@ async function prompDisperseDb(path) {
                     srcDbName, destDbNames, commonEnv, dialect
                 }
 
+            }
+            else if (dialectEnumId == '2') {
+                dialect = 'mssql';
+                let dbHost = await takeInput('database host (typically localhost. leave blank if so) ')
+                let commonEnv = { dbHost }
+                settings = {
+                    srcDbName, destDbNames, commonEnv, dialect
+                }
+            }
+            else {
+                throw new Error("Please Select a Valid Dialect!");
             }
         }
 
