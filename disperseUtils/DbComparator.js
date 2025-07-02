@@ -1,4 +1,4 @@
-const { describeDb, initPrimaryMySqlConnection, primaryConnectionObject } = require('../utils/primaryDBConnection');
+//const { describeDb, initPrimaryMySqlConnection, primaryConnectionObject } = require('../utils/primaryDBConnection');
 const { Database } = require('./Database');
 
 class DbComparator {

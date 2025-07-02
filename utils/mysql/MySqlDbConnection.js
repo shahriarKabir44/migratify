@@ -1,12 +1,12 @@
 const mysql = require('mysql2');
 
 
-class DBConnection {
-    static connection = null
+class MySqlDbConnection {
+    connection = null
 
-    static credential = null;
+    credential = null;
 
-    static async beginTransaction() {
+    async beginTransaction() {
         await this.initConnection();
         return new Promise((resolve, reject) => {
             this.connection.beginTransaction((err) => {
@@ -16,7 +16,7 @@ class DBConnection {
         })
 
     };
-    static async rollback() {
+    async rollback() {
         return new Promise((resolve, reject) => {
             this.connection.rollback((err) => {
                 if (err) reject(err);
@@ -24,7 +24,7 @@ class DBConnection {
             })
         })
     }
-    static async commit() {
+    async commit() {
         return new Promise((resolve, reject) => {
             this.connection.commit((err) => {
                 if (err) reject(err);
@@ -32,7 +32,7 @@ class DBConnection {
             })
         })
     }
-    static async endTransaction() {
+    async endTransaction() {
         return new Promise((resolve, reject) => {
             this.connection.end((err) => {
                 if (err) reject(err);
@@ -41,11 +41,11 @@ class DBConnection {
         })
     }
 
-    static async initConnection() {
+    async initConnection() {
         let env = this.credential ?? require(process.cwd() + '/migrations/config.json')
 
         return new Promise((resolve, reject) => {
-            DBConnection.connection = mysql.createConnection({
+            this.connection = mysql.createConnection({
                 host: env.dbHost,
                 user: env.dbUser,
                 password: env.dbPassword,
@@ -54,7 +54,7 @@ class DBConnection {
                 ssl: env.ssl
             })
 
-            DBConnection.connection.connect((err) => {
+            this.connection.connect((err) => {
 
                 if (err) reject(err)
                 resolve()
@@ -63,31 +63,31 @@ class DBConnection {
 
     }
 
-    static ShouldCloseConnectionNow = true;
+    ShouldCloseConnectionNow = true;
 
-    static async close() {
+    async close() {
 
         return new Promise((resolve, reject) => {
             if (!this.ShouldCloseConnectionNow) {
                 resolve();
             }
-            DBConnection.connection.end(e => {
-                DBConnection.connection = null
+            this.connection.end(e => {
+                this.connection = null
                 if (e) reject()
                 else resolve()
             })
 
         })
     }
-    static async executeSqlAsync({ sql, values }) {
-        return new Promise(function (resolve, reject) {
-            if (DBConnection.connection == null) {
-                DBConnection.initConnection()
+    async executeSqlAsync({ sql, values }) {
+        return new Promise((resolve, reject) => {
+            if (this.connection == null) {
+                this.initConnection()
                     .then(() => {
-                        DBConnection.connection.query({
+                        this.connection.query({
                             sql, values
                         }, (err, rows) => {
-                            DBConnection.close()
+                            this.close()
                                 .then(() => {
                                     if (err) reject(err)
                                     else resolve(rows)
@@ -96,7 +96,7 @@ class DBConnection {
                         })
                     })
             }
-            DBConnection.connection.query({
+            this.connection.query({
                 sql, values
             }, (err, rows) => {
                 if (err) reject(err)
@@ -109,4 +109,4 @@ class DBConnection {
 
 
 
-module.exports = { DBConnection }
+module.exports = { MySqlDbConnection }

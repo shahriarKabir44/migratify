@@ -19,6 +19,9 @@ class MsSqlDbConnection {
         }
 
     };
+    async endTransaction() {
+        return
+    }
     async rollback() {
 
         try {

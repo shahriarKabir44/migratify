@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 const fs = require('fs');
-const { createDatabaseIfNotExists, createMigrationFilesFromDb } = require('./utils/primaryDBConnection');
 const { createEnv } = require('./utils/userInput');
 const { rollback } = require('./rollbackUtils/rollback');
 const { dumpSchema, dumpData } = require('./utils/schemaDump');
 const { prompDisperseDb } = require('./disperseUtils/promptHandler');
+const { MySqlPrimaryManager } = require('./utils/mysql/MySqlPrimaryManager');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -29,18 +29,19 @@ else if (commands[0] == 'migrate') {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        const fileNames = fs.readFileSync(dir + '/index.txt').toString().split('\n')
+        const fileNames = fs.readFileSync(dir + '/index.txt').toString().split(',')
         if (!fs.existsSync(dir + '/logs.txt')) {
             fs.writeFileSync(dir + '/logs.txt', "")
         }
-        const existingList = fs.readFileSync(dir + '/logs.txt').toString().split('\n')
+        const existingList = fs.readFileSync(dir + '/logs.txt').toString().split(',')
         let existingMap = {}
         for (let existing of existingList) existingMap[existing] = 1
         let executed = ' ' + existingList.join(' ')
         for (let fileName of fileNames) {
             if (existingMap[fileName] == null) {
                 try {
-                    let data = await require(dir + `/${fileName}`)()
+                    let data = await require(dir + `/${fileName}`)();
+                    if (data == null) throw new Error("Error!");
                     executed += fileName + ' '
                     existingList.push(fileName)
                     if (!fs.existsSync(dir + '/metadata/')) {
@@ -55,7 +56,7 @@ else if (commands[0] == 'migrate') {
             }
 
         }
-        fs.writeFileSync(dir + '/logs.txt', existingList.join('\n'))
+        fs.writeFileSync(dir + '/logs.txt', existingList.join(','))
 
 
     })()
@@ -79,8 +80,8 @@ else if (commands[0] == 'create-db') {
             fs.mkdirSync(dir, { recursive: true });
         }
         let env = await createEnv(dir)
-        console.log(env)
-        createDatabaseIfNotExists(env)
+        let mySqlPrimaryManager = new MySqlPrimaryManager(env)
+        mySqlPrimaryManager.createDatabaseIfNotExists();
 
     })()
 
@@ -99,8 +100,8 @@ else if (commands[0] == 'load-db') {
             fs.mkdirSync(dir, { recursive: true });
         }
         let env = await createEnv(dir)
-
-        createMigrationFilesFromDb(env)
+        let mySqlPrimaryManager = new MySqlPrimaryManager(env);
+        mySqlPrimaryManager.createMigrationFilesFromDb(env)
             .then(contents => {
                 for (let tableName in contents) {
                     const newFileName = (new Date()) * 1 + "create-table_" + tableName + '.js'
@@ -112,8 +113,8 @@ else if (commands[0] == 'load-db') {
                     }
                     else {
                         let migratorIndexContents = fs.readFileSync(dir + '/index.txt').toString()
-                        fs.writeFileSync(dir + '/index.txt', migratorIndexContents + `\n${newFileName}`)
-                        fs.writeFileSync(dir + '/logs.txt', migratorIndexContents + `\n${newFileName}`)
+                        fs.writeFileSync(dir + '/index.txt', migratorIndexContents + `,${newFileName}`)
+                        fs.writeFileSync(dir + '/logs.txt', migratorIndexContents + `,${newFileName}`)
 
                     }
                     if (!fs.existsSync(dir + '/metadata/')) {
@@ -180,7 +181,7 @@ function createMigrationFiles(commands, type) {
     }
     else {
         let migratorIndexContents = fs.readFileSync(dir + '/index.txt').toString()
-        fs.writeFileSync(dir + '/index.txt', migratorIndexContents + `\n${newFileName}`)
+        fs.writeFileSync(dir + '/index.txt', migratorIndexContents + `,${newFileName}`)
 
     }
 }

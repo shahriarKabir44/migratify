@@ -1,12 +1,13 @@
-const { DBConnection } = require("../utils/dbConnection");
+const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection");
 
 
 
 async function revertUpdates(changes, tableName) {
+    var mySqlManager = new MySqlDbConnection();
     let promises = []
     let dropColumnsSQL = `ALTER TABLE ${tableName} ` +
         changes.addedColumns.map(addedColumn => `DROP COLUMN ${addedColumn.name}`).join(',') + ";";
-    promises.push(DBConnection.executeSqlAsync({
+    promises.push(mySqlManager.executeSqlAsync({
         sql: dropColumnsSQL,
         values: []
     }))
@@ -19,7 +20,7 @@ async function revertUpdates(changes, tableName) {
             ${deletedColumn.Default == null ? '' : `Default ${deletedColumn.Default}`}
         `
         }).join(',') + ";"
-    promises.push(DBConnection.executeSqlAsync({
+    promises.push(mySqlManager.executeSqlAsync({
         sql: addColumnsSQL,
         values: []
     }))
@@ -28,7 +29,7 @@ async function revertUpdates(changes, tableName) {
         changes.addedForeignKeys.map(addedForeignKey => {
             return ` DROP FOREIGN KEY fk_${tableName}_${addedForeignKey.refTable}`
         }).join(',') + ";";
-    promises.push(DBConnection.executeSqlAsync({
+    promises.push(mySqlManager.executeSqlAsync({
         sql: dropForeignKeysSQL,
         values: []
     }))
@@ -37,7 +38,7 @@ async function revertUpdates(changes, tableName) {
             return ` ADD CONSTRAINT fk_${tableName}_${deletedForeignKey.target_table}
                     FOREIGN KEY (${deletedForeignKey.source_column}) REFERENCES ${deletedForeignKey.target_table}(${deletedForeignKey.target_column})`
         }).join(' ') + ';';
-    promises.push(DBConnection.executeSqlAsync({
+    promises.push(mySqlManager.executeSqlAsync({
         sql: addForeignKeySQL,
         values: []
     }))
@@ -52,7 +53,7 @@ async function revertUpdates(changes, tableName) {
             ${alteredColumn.Null.toLowerCase() == 'yes' ? '' : 'NOT NULL'}
             ${alteredColumn.Default == null ? '' : `Default ${alteredColumn.Default}`}`
         }).join(',') + ';';
-    promises.push(DBConnection.executeSqlAsync({
+    promises.push(mySqlManager.executeSqlAsync({
         sql: modifyColumnsSQL,
         values: []
     }))

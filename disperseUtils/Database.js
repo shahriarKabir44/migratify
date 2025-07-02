@@ -1,5 +1,5 @@
 const { Table, Column } = require("../templates/Migration.class");
-const { DBConnection } = require("../utils/dbConnection");
+//const { DBConnection } = require("../utils/dbConnection");
 const readline = require('readline');
 
 class Database {

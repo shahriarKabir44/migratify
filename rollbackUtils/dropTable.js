@@ -1,8 +1,9 @@
+const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection")
 
-const { DBConnection } = require('../utils/dbConnection')
 
 async function dropTable(table) {
-    return DBConnection.executeSqlAsync({
+    var mySqlManager = new MySqlDbConnection()
+    return mySqlManager.executeSqlAsync({
         sql: `DROP TABLE ${table};`,
         values: []
     })

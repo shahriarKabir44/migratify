@@ -1,6 +1,6 @@
-const { DBConnection } = require("../utils/dbConnection")
 const fs = require('fs')
 const path = require('path')
+const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection")
 class Column {
     name = ""
     dataType = ""
@@ -85,6 +85,9 @@ class Column {
     }
 }
 class Table {
+
+    mySqlManager = {};
+
     columns = [];
     alteredName = "";
     columnsToRemove = []
@@ -134,11 +137,12 @@ class Table {
 
         this.name = tableName
         this.columns = []
-        this.newlyAddedColumns = []
+        this.newlyAddedColumns = [];
+        this.mySqlManager = new MySqlDbConnection();
     }
-    static async executeSql(sql) {
+    async executeSql(sql) {
         try {
-            await DBConnection.executeSqlAsync({ sql })
+            await this.mySqlManager.executeSqlAsync({ sql })
         } catch (error) {
             console.log(error)
         }
@@ -187,7 +191,7 @@ class Table {
 
     async drop() {
         let previousState = await this.getPreviousSchema()
-        Table.executeSql(`DROP TABLE ${this.name};`)
+        this.executeSql(`DROP TABLE ${this.name};`)
         return JSON.stringify({
             "case": "drop",
             "table": this.name,
@@ -202,7 +206,7 @@ class Table {
         ${this.columns.length > 0 && this.foreignKeys.length > 0 ? ',' : ''}
         ${this.foreignKeys.join(',')}
         );`
-        await Table.executeSql(sql)
+        await this.executeSql(sql)
         return JSON.stringify({
             "case": "create",
             "table": this.name
@@ -308,7 +312,7 @@ class Table {
             ${this.appendAndCompare(this.foreignKeysToDrop) ? "," : " "}
             ${this.foreignKeysToDrop.join(',')}  ; `
         let changes = await this.getChanges()
-        await Table.executeSql(sql)
+        await this.executeSql(sql)
         return changes
 
     }
@@ -316,7 +320,7 @@ class Table {
         if (Table.isDisperseMode) return null;
         const env = require(process.cwd() + '/migrations/config.json')
 
-        let schema = await DBConnection.executeSqlAsync({
+        let schema = await this.mySqlManager.executeSqlAsync({
             sql: `DESCRIBE ${this.name};`,
             values: []
         })
@@ -324,7 +328,7 @@ class Table {
         for (let col of schema) {
             _schema[col.Field] = col
         }
-        let foreignKeys = await DBConnection.executeSqlAsync({
+        let foreignKeys = await this.mySqlManager.executeSqlAsync({
             sql: `SELECT
                 con.table_name AS source_table,
                 con.referenced_table_name AS target_table,
