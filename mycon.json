@@ -1,0 +1,10 @@
+{
+    "srcDbName": "BidNexus",
+    "destDbNames": [
+        "testdb2"
+    ],
+    "commonEnv": {
+        "dbHost": "localhost\\SQL16"
+    },
+    "dialect": "mssql"
+}

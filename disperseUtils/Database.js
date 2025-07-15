@@ -1,6 +1,8 @@
 const { Table, Column } = require("../templates/Migration.class");
-//const { DBConnection } = require("../utils/dbConnection");
+
 const readline = require('readline');
+const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection");
+const { singletonMsSqlManagerObj } = require("../utils/mssql/MsSqlDbConnection");
 
 class Database {
     Tables = [];
@@ -8,11 +10,16 @@ class Database {
     credential = {};
     static isDisposeReadline = true;
     static readlineObj = null;
+    DBConnection = null;
     /**
      *
      */
-    constructor(rawData, credential) {
+    constructor(rawData, credential, dialect = 'mysql') {
         this.credential = credential;
+        if (dialect == 'mysql') this.DBConnection = new MySqlDbConnection();
+
+        else if (dialect == 'mssql') this.DBConnection = singletonMsSqlManagerObj;
+
         this.Name = rawData.dbName;
         rawData.tableDataList.forEach(table => {
             let newTable = new Table(table.tableName);
@@ -82,9 +89,10 @@ class Database {
      */
     async executeDifferences(srcDb) {
         let { newCols, newForeignKeys, addedTables, colsToDelete, fkeysToDelete, tablesToDelete } = this.compare(srcDb);
-        DBConnection.credential = this.credential;
-        //await DBConnection.initConnection();
-        await DBConnection.beginTransaction();
+        this.DBConnection.credential = this.credential;
+        this.DBConnection.env = this.credential;
+        await this.DBConnection.initConnection();
+        //  await this.DBConnection.beginTransaction();
         Table.isDisperseMode = true;
         console.log(`=======================================================================`);
         console.log(`Processing database: ${this.Name}`);
@@ -112,7 +120,7 @@ class Database {
             this.fkeys = [...this.fkeys, ...item]
 
         }
-        DBConnection.ShouldCloseConnectionNow = false;
+        this.DBConnection.ShouldCloseConnectionNow = false;
         try {
 
             //#region determine cols to drop and modify
@@ -303,17 +311,12 @@ class Database {
             //#endregion
 
             //#region create tables
-            promises = addedTables.map(table => {
+            for (const table of addedTables) {
                 let newTable = new Table(table.name);
                 newTable.columns = table.columns;
+                await newTable.create();
+            }
 
-
-
-
-                return newTable.create();
-
-            });
-            await Promise.all(promises);
 
             //#endregion
 
@@ -366,21 +369,22 @@ class Database {
                 fkeysToDelete = fkeysToDelete.filter(x => !(x.source_table == tableToStay.name || x.target_table == tableToStay.name));
             }
             //#endregion
-            await DBConnection.commit();
+            //  await this.DBConnection.commit();
 
             console.log(`Database ${this.Name} Is Updated Successfully!`);
             console.log(`=======================================================================`)
 
         } catch (error) {
             console.log(error);
-            await DBConnection.rollback();
+            //   await this.DBConnection.rollback();
+            process.exit();
         }
         finally {
             Table.isDisperseMode = false;
 
-            DBConnection.credential = null;
-            DBConnection.ShouldCloseConnectionNow = true;
-            await DBConnection.endTransaction();
+            this.DBConnection.credential = null;
+            this.DBConnection.ShouldCloseConnectionNow = true;
+            await this.DBConnection.endTransaction();
             if (Database.isDisposeReadline)
                 rl.close();
         }

@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection")
+const { singletonMsSqlManagerObj } = require('../utils/mssql/MsSqlDbConnection')
 class Column {
     name = ""
     dataType = ""
@@ -62,7 +63,11 @@ class Column {
         sql += ` ${this.dataType} `
         if (!this.isNullable) sql += 'NOT NULL '
         if (this.isPrimaryKey) {
-            sql += 'PRIMARY KEY AUTO_INCREMENT '
+            let autoIncrementStr = 'AUTO_INCREMENT';
+            if (Table.dialect == 'mssql') {
+                autoIncrementStr = 'IDENTITY(1,1)';
+            }
+            sql += `PRIMARY KEY ${autoIncrementStr}  `
         }
         if (this.isUnique) {
             sql += 'UNIQUE '
@@ -99,8 +104,11 @@ class Table {
     nameOfcolumnsToRemove = []
     foreignKeysToDrop = []
     foreignKeyObjsToDrop = []
-    name = ""
+    name = "";
 
+    dbHandler = {};
+
+    static dialect = 'mysql';
     static isDisperseMode = false;
 
     rename(newName) {
@@ -138,11 +146,12 @@ class Table {
         this.name = tableName
         this.columns = []
         this.newlyAddedColumns = [];
-        this.mySqlManager = new MySqlDbConnection();
+        this.dbHandler = new MySqlDbConnection();
+        if (Table.dialect == 'mssql') this.dbHandler = singletonMsSqlManagerObj;
     }
     async executeSql(sql) {
         try {
-            await this.mySqlManager.executeSqlAsync({ sql })
+            await this.dbHandler.executeSqlAsync({ sql })
         } catch (error) {
             console.log(error)
         }
@@ -199,7 +208,9 @@ class Table {
         })
     }
     async create() {
-        let sql = `create table if not exists ${this.name}(
+
+
+        let sql = `create table ${Table.dialect == 'mysql' ? ' if not exists ' : ''}  ${this.name}(
             ${this.columns.map(column => {
             return column.createSQL()
         }).join(',')}
@@ -320,7 +331,7 @@ class Table {
         if (Table.isDisperseMode) return null;
         const env = require(process.cwd() + '/migrations/config.json')
 
-        let schema = await this.mySqlManager.executeSqlAsync({
+        let schema = await this.dbHandler.executeSqlAsync({
             sql: `DESCRIBE ${this.name};`,
             values: []
         })
@@ -328,7 +339,7 @@ class Table {
         for (let col of schema) {
             _schema[col.Field] = col
         }
-        let foreignKeys = await this.mySqlManager.executeSqlAsync({
+        let foreignKeys = await this.dbHandler.executeSqlAsync({
             sql: `SELECT
                 con.table_name AS source_table,
                 con.referenced_table_name AS target_table,
