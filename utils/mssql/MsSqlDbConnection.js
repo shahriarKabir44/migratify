@@ -1,7 +1,7 @@
 const mssql = require('mssql/msnodesqlv8');
 const { topologicalSort } = require('../topologicalSort');
 const { PrimaryMsSqlManager } = require('./PrimaryMsSqlManager')
-
+const fs = require('fs');
 class MsSqlDbConnection {
     connection = null
     env = {};
@@ -80,7 +80,8 @@ class MsSqlDbConnection {
         return recordset
     }
 
-    async getTableSchemaList(tableName) {
+
+    async getTableSchemaList() {
         let data = await this.executeSqlAsync({
             sql: `
         USE ${this.env.dbName};
@@ -89,6 +90,7 @@ class MsSqlDbConnection {
             c.DATA_TYPE,
             c.CHARACTER_MAXIMUM_LENGTH,
             c.IS_NULLABLE,
+			c.TABLE_NAME,
             COLUMNPROPERTY(object_id(c.TABLE_SCHEMA + '.' + c.TABLE_NAME), c.COLUMN_NAME, 'IsIdentity') AS IsIdentity,
             dc.definition AS DefaultValue,
             CASE
@@ -113,27 +115,40 @@ class MsSqlDbConnection {
             INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE cu
                 ON rc.CONSTRAINT_NAME = cu.CONSTRAINT_NAME
         ) fk ON c.TABLE_SCHEMA = fk.TABLE_SCHEMA AND c.TABLE_NAME = fk.TABLE_NAME AND c.COLUMN_NAME = fk.COLUMN_NAME
-        WHERE c.TABLE_NAME = '${tableName}'
-        ORDER BY c.ORDINAL_POSITION;
+         ORDER BY c.ORDINAL_POSITION;
             
             `,
             values: []
         });
+
+        let taken = {};
+        data = data.filter(x => {
+            if (!taken[x.COLUMN_NAME + '-' + x.TABLE_NAME]) {
+                taken[x.COLUMN_NAME + '-' + x.TABLE_NAME] = 1;
+                return true;
+            }
+            return false;
+        })
+
         return data.map(x => {
             let col = {
                 Field: x.COLUMN_NAME,
                 Type: x.DATA_TYPE,
                 Null: x.IS_NULLABLE,
-                Default: x.DefaultValue
+                Default: x.DefaultValue,
+                TABLE_NAME: x.TABLE_NAME
             }
             if (x.ConstraintType == 'PRIMARY KEY') {
                 col.Key = 'PRI';
             }
             if (x.DATA_TYPE.toString().includes('varchar')) {
+                if (col.Default)
+                    col.Default = col.Default.replace(/'/g, "''");
                 if (x.CHARACTER_MAXIMUM_LENGTH == -1) {
                     col.Type += '(MAX)';
 
                 }
+
                 else col.Type += `(${x.CHARACTER_MAXIMUM_LENGTH})`;
             }
             return col;
@@ -162,7 +177,7 @@ class MsSqlDbConnection {
             let tables = await this.executeSqlAsync({
                 sql: `SELECT  TABLE_NAME
                 FROM ${env.dbName}.INFORMATION_SCHEMA.TABLES
-                WHERE TABLE_TYPE = 'BASE TABLE';
+                WHERE TABLE_TYPE = 'BASE TABLE' order by TABLE_NAME;
                 `,
                 values: []
             });
@@ -174,16 +189,18 @@ class MsSqlDbConnection {
             let foreignKeys = await this.getForeignKeys();
             let sortedTables = topologicalSort(tables, foreignKeys);
 
+
+
+
             let tableDataList = [];
-
+            console.log("==========================================")
+            console.log("Loading Table Definitions of " + env.dbName);
+            let tableDetailist = await this.getTableSchemaList();
             for (let tableName of sortedTables) {
-                let cols =
-                    await this.getTableSchemaList(tableName);
+
+
+                let cols = tableDetailist.filter(x => x.TABLE_NAME.toLowerCase() == tableName.toLowerCase());
                 let fkeys = []
-
-
-
-
                 fkeys = foreignKeys.filter(x => x.source_table == tableName);
                 tableDataList.push({
                     cols, fkeys, tableName

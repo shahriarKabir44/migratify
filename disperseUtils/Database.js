@@ -24,6 +24,7 @@ class Database {
         rawData.tableDataList.forEach(table => {
             let newTable = new Table(table.tableName);
             let { cols, fkeys } = table;
+
             newTable.createTableStructure(cols, fkeys);
             this.Tables.push(newTable);
         });
@@ -130,7 +131,7 @@ class Database {
             for (let colToDelete of colsToDelete) {
                 let question = (`The Column ${colToDelete.name} ${colToDelete.dataType} ${colToDelete.isNullable ? "Nullable" : "Not Nullable"} is not found on the source table ${colToDelete.tableName}!\n1=>Drop it\n2=>Modify It\nDefault: Keep it`);
                 let task = await takeInput(question);
-                if (task * 1 != 1 && task * 1 != 2) continue;
+                //if (task * 1 != 1 && task * 1 != 2) continue;
 
                 if (task * 1 == 1) {
 
@@ -220,7 +221,15 @@ class Database {
             }
 
             for (let tableToKeep of tablesToKeep) {
-                fkeysToDelete = fkeysToDelete.filter(x => !(x.source_table == tableToKeep.name || x.target_table == tableToKeep.name));
+                let fkeysToDeleteTemp = [];
+                for (const toDeleteFKey of fkeysToDelete) {
+                    if ((toDeleteFKey.tableName == tableToKeep.name || toDeleteFKey.refTable == tableToKeep.name)) {
+                        continue;
+                    }
+                    fkeysToDeleteTemp.push(toDeleteFKey);
+                }
+                fkeysToDelete = JSON.parse(JSON.stringify(fkeysToDeleteTemp));
+                // fkeysToDelete = fkeysToDelete.filter(x => !(x.source_table == tableToKeep.name || x.target_table == tableToKeep.name));
             }
 
             for (let tableToKeep of tablesToRename) {
@@ -242,10 +251,15 @@ class Database {
             let promises = distinctTables.map(tableName => {
                 let table = new Table(tableName);
                 let fkeysOfThisTable = fkeysToDelete.filter(x => x.tableName == tableName);
+                let tempPromises = []
                 fkeysOfThisTable.forEach(fkey => {
-                    table.dropForeignKey(fkey.columnName);
+                    tempPromises.push(table.dropForeignKey(fkey.columnName));
                 });
-                return table.update();
+
+                return Promise.all(tempPromises)
+                    .then(() => {
+                        return table.update();
+                    });
 
             });
             await Promise.all(promises);
@@ -312,6 +326,9 @@ class Database {
 
             //#region create tables
             for (const table of addedTables) {
+                if (table.name == 'Crm_Customer') {
+                    let p = 1;
+                }
                 let newTable = new Table(table.name);
                 newTable.columns = table.columns;
                 await newTable.create();
@@ -344,9 +361,18 @@ class Database {
             let distinctTablesForNewFkeys = Array.from(new Set(newForeignKeys.map(x => x.tableName)));
             promises = distinctTablesForNewFkeys.map(tableName => {
                 let newTable = new Table(tableName);
-                newForeignKeys.filter(x => x.tableName == tableName)
-                    .forEach(x => {
+                let newFKeysForThisTable = newForeignKeys.filter(x => x.tableName == tableName)
+                    .map(x => {
                         let { columnName, refTable, refColumn } = x;
+                        return { ...x, id: columnName + "__" + refTable + "__" + refColumn + "__" + tableName }
+                    });
+
+                let uniqIds = new Set(newFKeysForThisTable.map(x => x.id));
+
+                uniqIds
+                    .forEach(id => {
+                        let fkey = newFKeysForThisTable.filter(x => x.id == id)[0];
+                        let { columnName, refTable, refColumn } = fkey;
                         newTable.addForeignKey(columnName, refTable, refColumn);
                     });
                 return newTable.update();

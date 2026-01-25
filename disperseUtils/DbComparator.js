@@ -55,7 +55,7 @@ class DbComparator {
             this.primaryDbManager.initPrimaryConnection();
             this.dbManager.initConnection();
             let hasError = false;
-            for (let otherDbName of [...this.destDbNames, this.srcDbName]) {
+            for (let otherDbName of [this.srcDbName, ...this.destDbNames]) {
                 this.dbManager.env = this.generateCredential(otherDbName);
                 try {
                     let desc = await this.dbManager.describeDb(true);

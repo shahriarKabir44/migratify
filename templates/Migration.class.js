@@ -1,7 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const { MySqlDbConnection } = require("../utils/mysql/MySqlDbConnection")
-const { singletonMsSqlManagerObj } = require('../utils/mssql/MsSqlDbConnection')
+const { singletonMsSqlManagerObj, MsSqlDbConnection } = require('../utils/mssql/MsSqlDbConnection')
 class Column {
     name = ""
     dataType = ""
@@ -73,20 +73,24 @@ class Column {
             sql += 'UNIQUE '
         }
         if (this.defaultValue != "") {
-            sql += `DEFAULT '${this.defaultValue}'`
+            sql += `DEFAULT ${this.defaultValue}`
         }
         return sql
 
     }
 
     createAddSQL() {
-        return `ADD COLUMN ${this.createSQL()}`
+        return `ADD ${Table.dialect == 'mysql' ? 'COLUMN' : ' '} ${this.createSQL()}`
     }
     createUpdateSQL() {
         if (this.isDefaultValueSet) {
             return `ALTER COLUMN ${this.name} set DEFAULT "${this.defaultValue}"`
         }
-        return "CHANGE COLUMN " + this.createSQL()
+        let beginStatement = "CHANGE COLUMN ";
+        if (Table.dialect == 'mssql') {
+            beginStatement = "ALTER COLUMN ";
+        }
+        return beginStatement + this.createSQL()
     }
 }
 class Table {
@@ -136,9 +140,32 @@ class Table {
         this.columnsToRemove.push(`drop column  ${columnName}`);
     }
 
-    dropForeignKey(keyName) {
+    async dropForeignKey(keyName) {
         this.foreignKeyObjsToDrop.push(keyName)
-        this.foreignKeysToDrop.push(`DROP FOREIGN KEY fk_${this.name}_${keyName}`)
+        let command = `DROP FOREIGN KEY fk_${this.name}_${keyName}`;
+        if (Table.dialect == 'mssql') {
+
+            let { ConstraintName } = await singletonMsSqlManagerObj.executeSqlAsync(`
+                SELECT 
+                    fk.name AS ConstraintName,t_parent.name,c_parent.name,t_ref.name
+                FROM sys.foreign_keys AS fk
+                INNER JOIN sys.foreign_key_columns AS fkc ON fk.object_id = fkc.constraint_object_id
+                INNER JOIN sys.tables AS t_parent ON fkc.parent_object_id = t_parent.object_id
+                INNER JOIN sys.columns AS c_parent ON fkc.parent_object_id = c_parent.object_id 
+                    AND fkc.parent_column_id = c_parent.column_id
+                INNER JOIN sys.tables AS t_ref ON fkc.referenced_object_id = t_ref.object_id
+                WHERE t_parent.name = '${this.name}'
+                AND c_parent.name = '${keyName}'
+                
+                `);
+            if (ConstraintName == null) {
+                throw new Error("Invalid Constraint!");
+            }
+
+            command = `DROP constraint ${ConstraintName}`
+        }
+
+        this.foreignKeysToDrop.push(command)
     }
 
     constructor(tableName) {
@@ -157,7 +184,9 @@ class Table {
         }
 
     }
-
+    toString() {
+        return { name: this.name, columns: this.columns }
+    }
     /**
      * 
      * @param {Table} table 
@@ -193,7 +222,9 @@ class Table {
 
         src.foreignKeyObjs.forEach(fkey => {
             let otherTableFkey = dest.foreignKeyObjs.filter(x => x.columnName == fkey.columnName)[0];
-            if (!otherTableFkey) newFKeys.push({ ...fkey, tableName: src.name });
+            if (!otherTableFkey) {
+                newFKeys.push({ ...fkey, tableName: src.name });
+            }
         });
         return newFKeys;
     }
@@ -241,8 +272,10 @@ class Table {
             newColumn.setDataType(type)
                 .setDefaultValue(col.Detault)
                 .setUnique(col.Key == 'UNI')
-            if (col['Default'] != null) newColumn.setDefaultValue(col['Default'])
-            if (col.Null == 'YES') newColumn.setNullable()
+            if (col['Default'] != null) newColumn.setDefaultValue(col['Default']);
+            newColumn.isNullable = false;
+            if (col.Null == 'YES') newColumn.setNullable();
+
         })
         foreignKeys.forEach(fkey => {
             this.addForeignKey(fkey.source_column, fkey.target_table, fkey.target_column, fkey.cname)
@@ -299,11 +332,13 @@ class Table {
         return isFound == 1 & list.length > 0
     }
     async update() {
-        this.appendedList.push(this.columns)
-        let sql = `alter table ${this.name}
+
+        if (Table.dialect == 'mysql') {
+            this.appendedList.push(this.columns)
+            let sql = `alter table ${this.name}
             ${this.alteredName ? 'rename to ' + this.alteredName : ''}
-        ${this.columns.map((column) =>
-            column.createAddSQL()).join(',')}
+             ${this.columns.map((column) =>
+                column.createAddSQL()).join(',')}
             ${this.appendAndCompare(this.columnsToRemove) ? ',' : ' '}
             
             ${this.columnsToRemove.join(',')}
@@ -311,10 +346,10 @@ class Table {
             ${this.appendAndCompare(this.columnsToUpdate) ? ',' : ' '}
 
              ${this.columnsToUpdate.map((column) =>
-                column.createUpdateSQL()).join(',')}
+                    column.createUpdateSQL()).join(',')}
             ${this.appendAndCompare(this.foreignKeys) ? ',' : ' '}
 
-            ${this.foreignKeys.map(foreignKey => `ADD ${foreignKey}`).join(',')}
+            ${this.foreignKeys.map((foreignKey, index) => `${index == 0 ? 'ADD ' : (Table.dialect == 'mysql' ? 'ADD ' : ' ')} ${foreignKey}`).join(',')}
 
             ${this.appendAndCompare(this.columnsToRename) ? "," : " "}
             
@@ -322,9 +357,50 @@ class Table {
 
             ${this.appendAndCompare(this.foreignKeysToDrop) ? "," : " "}
             ${this.foreignKeysToDrop.join(',')}  ; `
-        let changes = await this.getChanges()
-        await this.executeSql(sql)
-        return changes
+            let changes = await this.getChanges()
+            await this.executeSql(sql);
+            return changes;
+        }
+        else if (Table.dialect == 'mssql') {
+            let changes = await this.getChanges()
+
+            for (const colToUpdate of this.columnsToUpdate) {
+                let alterSql = `alter table ${this.name} alter column ${colToUpdate.name} ${colToUpdate.dataType} ${colToUpdate.isNullable ? "NULL" : "Not null"} `;
+                await this.executeSql(alterSql);
+            }
+
+            for (let colToAdd of this.columns) {
+                let alterSql = `alter table ${this.name} ${colToAdd.createAddSQL()} `;
+                await this.executeSql(alterSql);
+
+            }
+
+            let colsForRenaming = this.columnsToUpdate.filter(x => x.modifiedName != "");
+            for (const colForRenaming of colsForRenaming) {
+                let renameSql = `EXEC sp_rename '${this.name}.${colForRenaming.name}', '${colForRenaming.modifiedName}', 'COLUMN'`;
+                await this.executeSql(renameSql);
+            }
+
+            if (this.nameOfcolumnsToRemove.length > 0) {
+                let namesJoined = this.nameOfcolumnsToRemove.join(',');
+                let dropColSql = `alter table ${this.name} drop column ${namesJoined}`;
+                await this.executeSql(dropColSql);
+            }
+            for (const fkey of this.foreignKeys) {
+                let addFkeyQuery = `alter table ${this.name} add ${fkey};`
+                await this.executeSql(addFkeyQuery);
+            }
+
+            for (const fkeyToDrop of this.foreignKeysToDrop) {
+                let dropFkeyQuery = `alter table ${this.name}   ${fkeyToDrop};`
+                await this.executeSql(dropFkeyQuery);
+            }
+
+            return changes;
+
+        }
+
+
 
     }
     async getPreviousSchema() {

@@ -30,7 +30,6 @@ class PrimaryMsSqlManager {
     }
 
     async executeSqlAsyncPrimary({ sql, values }) {
-        console.log(sql, this.env);
         return new Promise((resolve, reject) => {
 
             this.primaryConnectionObject.connection.query(sql)

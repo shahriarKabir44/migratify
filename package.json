@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "load-db": "node index load-db"
+    "load-db": "node index load-db",
+    "disperse": "node index disperse"
   },
   "keywords": [
     "cli",
