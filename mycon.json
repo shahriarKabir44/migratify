@@ -1,10 +1,1 @@
-{
-    "srcDbName": "BidNexus",
-    "destDbNames": [
-        "testdb2"
-    ],
-    "commonEnv": {
-        "dbHost": "localhost\\SQL16"
-    },
-    "dialect": "mssql"
-}
+{"srcDbName":"SmEms4","destDbNames":["BiuEms5"],"commonEnv":{"dbHost":"localhost\\SQL16"},"dialect":"mssql"}

@@ -3,7 +3,7 @@ const fs = require('fs');
 const { createEnv } = require('./utils/userInput');
 const { rollback } = require('./rollbackUtils/rollback');
 const { dumpSchema, dumpData } = require('./utils/schemaDump');
-const { prompDisperseDb } = require('./disperseUtils/promptHandler');
+const { promptDisperseDb } = require('./disperseUtils/promptHandler');
 const { MySqlPrimaryManager } = require('./utils/mysql/MySqlPrimaryManager');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
@@ -143,7 +143,7 @@ else if (commands[0] == 'rollback') {
 }
 
 else if (commands[0] == 'disperse') {
-    prompDisperseDb()
+    promptDisperseDb()
 }
 
 else if (commands[0] == 'dump-schema') dumpSchema()

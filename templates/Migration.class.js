@@ -53,6 +53,55 @@ class Column {
         return this
     }
 
+    getDefaultValueForMySql() {
+        const type = this.dataType.toLowerCase();
+
+        // MySQL expanded numeric types
+        const numericalTypes = new Set([
+            'int', 'integer', 'bigint', 'mediumint', 'smallint',
+            'tinyint', 'float', 'double', 'decimal', 'numeric', 'bit'
+        ]);
+
+        if (numericalTypes.has(type)) return 0;
+
+        // Handles varchar, char, and various TEXT types (tinytext, longtext, etc.)
+        if (type.includes('char') || type.includes('text')) {
+            return "''";
+        }
+
+        // MySQL Date logic
+        if (type === 'datetime' || type === 'date') {
+            return "'1000-01-01'"; // MySQL's absolute minimum valid date
+        }
+
+        if (type === 'timestamp') {
+            return "'1970-01-01 00:00:01'"; // The Unix Epoch floor
+        }
+
+        if (type === 'time') {
+            return "'00:00:00'";
+        }
+
+        if (type === 'year') {
+            return '1901'; // Minimum value for the YEAR(4) type
+        }
+
+        return "''";
+    }
+
+    getDefaultValueForMsSql() {
+        let numericalTypes = new Set(['int', 'bigint', 'bit', 'tinyint', 'float', 'real']);
+        if (numericalTypes.has(this.dataType.toLowerCase())) return 0;
+        if (this.dataType.toLowerCase().includes('varchar')) {
+            return "''"
+        }
+        if (this.dataType == 'DATETIME') return '1753-01-01'
+        if (this.dataType == 'SMALLDATETIME') return '1900-01-01'
+        if (this.dataType.includes('DATE')) return '0001-01-01'
+
+        return ''
+    }
+
     createSQL() {
 
         let sql = `${this.name} `
@@ -75,6 +124,17 @@ class Column {
         if (this.defaultValue != "") {
             sql += `DEFAULT ${this.defaultValue}`
         }
+        else {
+            if (!this.isNullable) {
+                if (Table.dialect == 'mssql') {
+                    sql += `DEFAULT ${this.getDefaultValueForMsSql()}`
+                }
+                else if (Table.dialect == 'mysql') {
+                    sql += `DEFAULT ${this.getDefaultValueForMySql()}`
+                }
+
+            }
+        }
         return sql
 
     }
@@ -96,7 +156,7 @@ class Column {
 class Table {
 
     mySqlManager = {};
-
+    dbName = "";
     columns = [];
     alteredName = "";
     columnsToRemove = []
@@ -132,7 +192,7 @@ class Table {
         return newColumn
     }
     addForeignKey(columnName, refTable, refColumn, keyName = "") {
-        this.foreignKeyObjs.push({ columnName, refTable, refColumn, keyName })
+        this.foreignKeyObjs.push({ columnName, refTable, refColumn, keyName, srcTable: this.name })
         this.foreignKeys.push(` CONSTRAINT fk_${this.name}_${columnName}  FOREIGN KEY (${columnName}) REFERENCES  ${refTable}(${refColumn}) `)
     }
     dropColumn(columnName) {
@@ -145,7 +205,8 @@ class Table {
         let command = `DROP FOREIGN KEY fk_${this.name}_${keyName}`;
         if (Table.dialect == 'mssql') {
 
-            let { ConstraintName } = await singletonMsSqlManagerObj.executeSqlAsync(`
+            let query = `
+                use ${this.dbName};
                 SELECT 
                     fk.name AS ConstraintName,t_parent.name,c_parent.name,t_ref.name
                 FROM sys.foreign_keys AS fk
@@ -157,9 +218,10 @@ class Table {
                 WHERE t_parent.name = '${this.name}'
                 AND c_parent.name = '${keyName}'
                 
-                `);
+                `;
+            let [{ ConstraintName }] = await singletonMsSqlManagerObj.executeSqlAsync({ sql: query });
             if (ConstraintName == null) {
-                throw new Error("Invalid Constraint!");
+                throw new Error(`Foreign key not found in ${this.name}-${keyName}`);
             }
 
             command = `DROP constraint ${ConstraintName}`
@@ -331,6 +393,46 @@ class Table {
         this.appendedList.push(list)
         return isFound == 1 & list.length > 0
     }
+
+
+    async updateTableForMsSql() {
+        let changes = await this.getChanges()
+
+        for (const colToUpdate of this.columnsToUpdate) {
+            let alterSql = `alter table ${this.name} alter column ${colToUpdate.name} ${colToUpdate.dataType} ${colToUpdate.isNullable ? "NULL" : "Not null"} `;
+            await this.executeSql(alterSql);
+        }
+
+        for (let colToAdd of this.columns) {
+            let alterSql = `alter table ${this.name} ${colToAdd.createAddSQL()} `;
+            await this.executeSql(alterSql);
+
+        }
+
+        let colsForRenaming = this.columnsToUpdate.filter(x => x.modifiedName != "");
+        for (const colForRenaming of colsForRenaming) {
+            let renameSql = `EXEC sp_rename '${this.name}.${colForRenaming.name}', '${colForRenaming.modifiedName}', 'COLUMN'`;
+            await this.executeSql(renameSql);
+        }
+
+        if (this.nameOfcolumnsToRemove.length > 0) {
+            let namesJoined = this.nameOfcolumnsToRemove.join(',');
+            let dropColSql = `alter table ${this.name} drop column ${namesJoined}`;
+            await this.executeSql(dropColSql);
+        }
+        for (const fkey of this.foreignKeys) {
+            let addFkeyQuery = `alter table ${this.name} add ${fkey};`
+            await this.executeSql(addFkeyQuery);
+        }
+
+        for (const fkeyToDrop of this.foreignKeysToDrop) {
+            let dropFkeyQuery = `alter table ${this.name}   ${fkeyToDrop};`
+            await this.executeSql(dropFkeyQuery);
+        }
+
+        return changes;
+    }
+
     async update() {
 
         if (Table.dialect == 'mysql') {
@@ -362,42 +464,8 @@ class Table {
             return changes;
         }
         else if (Table.dialect == 'mssql') {
-            let changes = await this.getChanges()
 
-            for (const colToUpdate of this.columnsToUpdate) {
-                let alterSql = `alter table ${this.name} alter column ${colToUpdate.name} ${colToUpdate.dataType} ${colToUpdate.isNullable ? "NULL" : "Not null"} `;
-                await this.executeSql(alterSql);
-            }
-
-            for (let colToAdd of this.columns) {
-                let alterSql = `alter table ${this.name} ${colToAdd.createAddSQL()} `;
-                await this.executeSql(alterSql);
-
-            }
-
-            let colsForRenaming = this.columnsToUpdate.filter(x => x.modifiedName != "");
-            for (const colForRenaming of colsForRenaming) {
-                let renameSql = `EXEC sp_rename '${this.name}.${colForRenaming.name}', '${colForRenaming.modifiedName}', 'COLUMN'`;
-                await this.executeSql(renameSql);
-            }
-
-            if (this.nameOfcolumnsToRemove.length > 0) {
-                let namesJoined = this.nameOfcolumnsToRemove.join(',');
-                let dropColSql = `alter table ${this.name} drop column ${namesJoined}`;
-                await this.executeSql(dropColSql);
-            }
-            for (const fkey of this.foreignKeys) {
-                let addFkeyQuery = `alter table ${this.name} add ${fkey};`
-                await this.executeSql(addFkeyQuery);
-            }
-
-            for (const fkeyToDrop of this.foreignKeysToDrop) {
-                let dropFkeyQuery = `alter table ${this.name}   ${fkeyToDrop};`
-                await this.executeSql(dropFkeyQuery);
-            }
-
-            return changes;
-
+            return this.updateTableForMsSql();
         }
 
 

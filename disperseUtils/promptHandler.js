@@ -5,7 +5,7 @@ const Path = require('path');
 const { Database } = require('./Database');
 const sql = require('mssql/msnodesqlv8');
 
-async function prompDisperseDb(path) {
+async function promptDisperseDb(path) {
 
     const rl = readline.createInterface({
         input: process.stdin,
@@ -123,4 +123,4 @@ async function prompDisperseDb(path) {
 
 }
 
-module.exports = { prompDisperseDb };
+module.exports = { promptDisperseDb };

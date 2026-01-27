@@ -24,7 +24,7 @@ class Database {
         rawData.tableDataList.forEach(table => {
             let newTable = new Table(table.tableName);
             let { cols, fkeys } = table;
-
+            newTable.dbName = this.Name;
             newTable.createTableStructure(cols, fkeys);
             this.Tables.push(newTable);
         });
@@ -43,7 +43,7 @@ class Database {
         let tablesToDelete = [];
 
         this.Tables.forEach(table => {
-
+            table.dbName = this.Name;
             let srcTable = srcDb.Tables.filter(x => x.name == table.name)[0];
             if (!srcTable) {
                 fkeysToDelete = [...fkeysToDelete, ...table.foreignKeyObjs.map(x => {
@@ -62,6 +62,7 @@ class Database {
         });
 
         srcDb.Tables.forEach(table => {
+            table.dbName = srcDb.Name;
             let existing = this.Tables.filter(x => x.name == table.name)[0];
             if (existing == null) {
                 newForeignKeys = [...newForeignKeys, ...table.foreignKeyObjs.map(x => {
@@ -137,7 +138,7 @@ class Database {
 
                     for (let thisTableFkey of this.fkeys) {
                         if (thisTableFkey.source_column == colToDelete.name || thisTableFkey.target_column == colToDelete.name) {
-                            if (!fkeysToDelete.filter(x => x.source_column == thisTableFkey.source_column
+                            if (!fkeysToDelete.filter(x => x.columnName == thisTableFkey.source_column
                                 && x.target_column == thisTableFkey.target_column
                             )[0]) {
                                 fkeysToDelete.push(thisTableFkey);
@@ -178,6 +179,15 @@ class Database {
             for (let colToKeep of colsNotToDelete) {
                 colsToDelete = colsToDelete.filter(x => !(x.tableName == colToKeep.tableName && x.name == colToKeep.name));
             }
+            for (const fkeyToDelete of fkeysToDelete) {
+                if (colsNotToDelete.filter(x => x.name == fkeyToDelete.columnName && x.tableName == fkeyToDelete.srcTable)[0]) {
+                    if (colsNotToDelete.filter(x => x.name == fkeyToDelete.refColumn && x.tableName == fkeyToDelete.refTable)[0]) {
+                        continue;
+                    }
+                }
+                fkeyToDelete.isToDelete = true;
+            }
+            fkeysToDelete = fkeysToDelete.filter(x => x.isToDelete);
 
             let uniqueTablesForColRenaming = Array.from(new Set(colsToRename.map(x => x.tableName)));
 
@@ -220,17 +230,21 @@ class Database {
                 addedTables = addedTables.filter(x => x.name != tableToDelete.name);
             }
 
-            for (let tableToKeep of tablesToKeep) {
-                let fkeysToDeleteTemp = [];
-                for (const toDeleteFKey of fkeysToDelete) {
-                    if ((toDeleteFKey.tableName == tableToKeep.name || toDeleteFKey.refTable == tableToKeep.name)) {
-                        continue;
-                    }
-                    fkeysToDeleteTemp.push(toDeleteFKey);
+
+            let tablesToKeepNames = new Set(tablesToKeep.map(x => x.name));
+            let colsToKeep = new Set()
+            let fkeysToDeleteTemp = [];
+            for (const toDeleteFKey of fkeysToDelete) {
+                if (tablesToKeepNames.has(toDeleteFKey.tableName) || tablesToKeepNames.has(toDeleteFKey.refTable)) {
+                    continue;
                 }
-                fkeysToDelete = JSON.parse(JSON.stringify(fkeysToDeleteTemp));
-                // fkeysToDelete = fkeysToDelete.filter(x => !(x.source_table == tableToKeep.name || x.target_table == tableToKeep.name));
+                fkeysToDeleteTemp.push(toDeleteFKey);
             }
+
+            fkeysToDelete = JSON.parse(JSON.stringify(fkeysToDeleteTemp));
+
+
+
 
             for (let tableToKeep of tablesToRename) {
                 fkeysToDelete = fkeysToDelete.filter(x => !(x.source_table == tableToKeep.name || x.target_table == tableToKeep.name));
@@ -248,21 +262,18 @@ class Database {
 
             let distinctTables = Array.from(new Set(fkeysToDelete.map(x => x.tableName)));
 
-            let promises = distinctTables.map(tableName => {
+            for (const tableName of distinctTables) {
                 let table = new Table(tableName);
+                table.dbName = this.Name;
                 let fkeysOfThisTable = fkeysToDelete.filter(x => x.tableName == tableName);
-                let tempPromises = []
-                fkeysOfThisTable.forEach(fkey => {
-                    tempPromises.push(table.dropForeignKey(fkey.columnName));
-                });
+                for (const fkey of fkeysOfThisTable) {
+                    await table.dropForeignKey(fkey.columnName);
+                }
+                await table.update();
+            }
 
-                return Promise.all(tempPromises)
-                    .then(() => {
-                        return table.update();
-                    });
 
-            });
-            await Promise.all(promises);
+
 
 
 
@@ -271,7 +282,7 @@ class Database {
             //#region drop cols
             let distinctTablesForColDelete = Array.from(new Set(colsToDelete.map(x => x.tableName)));
 
-            promises = distinctTablesForColDelete.map((tableName) => {
+            let promises = distinctTablesForColDelete.map((tableName) => {
                 let newTable = new Table(tableName);
                 let colsToDeleteForThisTable = colsToDelete.filter(x => x.tableName == tableName);
                 colsToDeleteForThisTable.forEach(async colToDelete => {
@@ -339,22 +350,25 @@ class Database {
 
             //#region create columns
             let distinctTablesForNewCols = Array.from(new Set(newCols.map(x => x.tableName)));
-            promises = distinctTablesForNewCols.map(tableName => {
+
+            for (const tableName of distinctTablesForNewCols) {
                 let newTable = new Table(tableName);
-                newTable.columns = newCols.filter(x => x.tableName == tableName)
-                    .map(x => {
-                        let newCol = new Column(x.name);
-                        newCol.dataType = x.dataType;
-                        newCol.defaultValue = x.defaultValue;
-                        newCol.isNullable = x.isNullable;
-                        newCol.isPrimaryKey = x.isPrimaryKey;
-                        newCol.isAutoIncrement = x.isAutoIncrement;
-                        newCol.isUnique = x.isUnique;
-                        return newCol;
-                    });
-                return newTable.update();
-            });
-            await Promise.all(promises);
+                let thisTableCols = newCols.filter(x => x.tableName == tableName);
+
+                newTable.columns = thisTableCols.map(x => {
+                    let newCol = new Column(x.name);
+                    newCol.dataType = x.dataType;
+                    newCol.defaultValue = x.defaultValue;
+                    newCol.isNullable = x.isNullable;
+                    newCol.isPrimaryKey = x.isPrimaryKey;
+                    newCol.isAutoIncrement = x.isAutoIncrement;
+                    newCol.isUnique = x.isUnique;
+                    return newCol;
+                });
+                await newTable.update();
+            }
+
+
             //#endregion
 
             //#region create fkeys
