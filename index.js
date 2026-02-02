@@ -5,6 +5,7 @@ const { createEnv } = require('./utils/userInput');
 const { rollback } = require('./rollbackUtils/rollback');
 const { dumpSchema, dumpData } = require('./utils/schemaDump');
 const { prompDisperseDb } = require('./disperseUtils/promptHandler');
+const path = require('path');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -25,7 +26,8 @@ else if (commands[0] == 'migrate') {
 
 
     (async () => {
-        let dir = process.cwd() + '/migrations'
+        let dir = path.join(process.cwd(), 'migrations')
+
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
@@ -38,9 +40,15 @@ else if (commands[0] == 'migrate') {
         for (let existing of existingList) existingMap[existing] = 1
         let executed = ' ' + existingList.join(' ')
         for (let fileName of fileNames) {
+            fileName = fileName.trim();
             if (existingMap[fileName] == null) {
                 try {
-                    let data = await require(dir + `/${fileName}`)()
+                    let filePath = path.join(dir, fileName.trim());
+                    if (!fs.existsSync(filePath)) {
+                        process.exit();
+                    }
+                    let func = require(filePath)
+                    let data = await func();
                     executed += fileName + ' '
                     existingList.push(fileName)
                     if (!fs.existsSync(dir + '/metadata/')) {
@@ -49,7 +57,8 @@ else if (commands[0] == 'migrate') {
                     fs.writeFileSync(dir + '/metadata/' + fileName.replace('.js', '.json'), data)
 
                 } catch (error) {
-                    console.log(error)
+                    console.log(error);
+                    process.exit()
                 }
 
             }
