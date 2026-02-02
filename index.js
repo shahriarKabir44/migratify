@@ -5,6 +5,7 @@ const { rollback } = require('./rollbackUtils/rollback');
 const { dumpSchema, dumpData } = require('./utils/schemaDump');
 const { promptDisperseDb } = require('./disperseUtils/promptHandler');
 const { MySqlPrimaryManager } = require('./utils/mysql/MySqlPrimaryManager');
+const { PrimaryMsSqlManager } = require('./utils/mssql/PrimaryMsSqlManager');
 const commands = process.argv.filter((item, index) => index > 1)
 if (commands[0] == 'create-table') {
 
@@ -80,6 +81,7 @@ else if (commands[0] == 'create-db') {
             fs.mkdirSync(dir, { recursive: true });
         }
         let env = await createEnv(dir)
+        //if (env.)
         let mySqlPrimaryManager = new MySqlPrimaryManager(env)
         mySqlPrimaryManager.createDatabaseIfNotExists();
 
@@ -99,9 +101,15 @@ else if (commands[0] == 'load-db') {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true });
         }
-        let env = await createEnv(dir)
-        let mySqlPrimaryManager = new MySqlPrimaryManager(env);
-        mySqlPrimaryManager.createMigrationFilesFromDb(env)
+        let env = await createEnv(dir);
+        let dbManager = {}
+        if (env.dialect == 'mysql') {
+            dbManager = new MySqlPrimaryManager(env);
+        }
+        else if (env.dialect == 'mssql') {
+            dbManager = new PrimaryMsSqlManager(env);
+        }
+        dbManager.createMigrationFilesFromDb(env)
             .then(contents => {
                 for (let tableName in contents) {
                     const newFileName = (new Date()) * 1 + "create-table_" + tableName + '.js'

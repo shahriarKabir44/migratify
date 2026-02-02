@@ -16,6 +16,33 @@ async function createEnv(path) {
             });
         })
     }
+    try {
+        let dialect = await takeInput('Database dialect? \n1: MySql\n2: Microsoft SQL (Windows Auth) \n(Default MySql)');
+        if (dialect == '' || dialect * 1 == 1) {
+            return createConfigForMySql(takeInput);
+        }
+        else if (dialect * 1 == 2) {
+            return createConfigForMsSql(takeInput);
+        }
+    } catch (error) {
+
+    }
+    finally {
+
+        rl.close()
+
+    }
+
+
+
+
+}
+/**
+ * 
+ * @param {Function} takeInput 
+ * @returns 
+ */
+async function createConfigForMySql(takeInput) {
     let dbName = await takeInput('Database name ')
     let dbPort = await takeInput('port (typically 3306. leave blank if so)')
     if (dbPort == '') dbPort = 3306
@@ -30,18 +57,36 @@ async function createEnv(path) {
     if (!fs.existsSync(path + '/config.json')) {
         fs.writeFileSync(path + '/config.json', "")
     }
-    fs.writeFileSync(path + '/config.json', `{"dbPassword":"${dbPassword}",\n"dbPort":"${dbPort}",\n"dbName":"${dbName}",\n"dbUser":"${dbUser}",\n"dbHost":"${dbHost}"}`)
+    let json = {
+        "dbPassword": dbPassword, "dbPort": dbPort, "dbName": dbName, "dbUser": dbUser, "dbHost": dbHost
+        , "dialect": "mysql"
+    };
+    fs.writeFileSync(path + '/config.json', JSON.stringify(json));
+    return json;
 
-    rl.close()
-    return {
-        dbName,
-        dbPort,
-        dbHost,
-        dbPassword,
-        dbUser
+}
+
+/**
+ * 
+ * @param {Function} takeInput 
+ * @returns 
+ */
+async function createConfigForMsSql(takeInput) {
+    let dbName = await takeInput('Database name ')
+    let dbHost = await takeInput('database host (typically localhost. leave blank if so) ')
+    if (dbHost == '') dbHost = 'localhost'
+
+
+    if (!fs.existsSync(path + '/config.json')) {
+        fs.writeFileSync(path + '/config.json', "")
     }
-    rl.on('close', () => {
-    })
+    let json = {
+        "dbUser": dbUser, "dbHost": dbHost
+        , "dialect": "mssql"
+    };
+    fs.writeFileSync(path + '/config.json', JSON.stringify(json));
+    return json;
+
 }
 
 

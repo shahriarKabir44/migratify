@@ -52,6 +52,7 @@ class DbComparator {
 
     async beginProcess() {
         try {
+            this.primaryDbManager.IsInDisperseMode = true;
             this.primaryDbManager.initPrimaryConnection();
             this.dbManager.initConnection();
             let hasError = false;
